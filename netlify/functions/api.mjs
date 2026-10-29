@@ -59,8 +59,13 @@ const getDummyHash = async () => dummyHash || (dummyHash = await hashPw('dummy-p
 
 /* ---------------- Supabase (PostgREST) ---------------- */
 function dbConfig() {
-  const url = (process.env.SUPABASE_URL || '').trim().replace(/\/+$/, '');
-  const key = (process.env.SUPABASE_SERVICE_KEY || '').trim();
+  const clean = v => String(v || '').trim().replace(/^["']+|["']+$/g, '').trim();
+  let url = clean(process.env.SUPABASE_URL);
+  const key = clean(process.env.SUPABASE_SERVICE_KEY);
+  if (url) {
+    try { url = new URL(/^https?:\/\//i.test(url) ? url : 'https://' + url).origin; } // drops any /rest/v1 or trailing path
+    catch { throw httpErr(500, 'SUPABASE_URL is not a valid web address. It should look like https://abcdxyz.supabase.co'); }
+  }
   if (!url || !key) throw httpErr(500, 'Server is not configured: set SUPABASE_URL and SUPABASE_SERVICE_KEY in Netlify environment variables, then redeploy.');
   return { url, key };
 }
@@ -84,11 +89,17 @@ async function sb(method, path, opts = {}) {
   if (text) { try { data = JSON.parse(text); } catch { /* not json */ } }
   if (!res.ok) {
     console.error('Supabase error', method, path.split('?')[0], res.status, text.slice(0, 400));
-    const err = httpErr(500, (res.status === 401 || res.status === 403)
-      ? 'Database rejected the key. Check SUPABASE_SERVICE_KEY in Netlify.'
-      : (data && data.code === 'PGRST205') ? 'Database tables are missing. Run supabase/schema.sql in the Supabase SQL Editor.'
-      : 'Database error');
-    err.pg = data && data.code;
+    const code = data && typeof data === 'object' ? data.code : undefined;
+    const detail = `HTTP ${res.status}${code ? ' ' + code : ''}${data && data.message ? ': ' + String(data.message).slice(0, 160) : ''}`;
+    let msg;
+    if (code === '42501') msg = 'Database permission problem: run supabase/fix-grants.sql in the Supabase SQL Editor.';
+    else if (code === 'PGRST205' || code === '42P01') msg = 'Database tables are missing: run supabase/schema.sql in the Supabase SQL Editor.';
+    else if (res.status === 401 || (res.status === 403 && !code)) msg = 'Database rejected the key: check SUPABASE_SERVICE_KEY in Netlify.';
+    else if (res.status === 404 && !code) msg = 'Database address not found: check SUPABASE_URL in Netlify.';
+    else if (res.status === 503 || res.status === 540 || res.status === 521) msg = 'Database is not responding: the Supabase project may be paused. Open the Supabase dashboard and click Restore.';
+    else msg = 'Database error';
+    const err = httpErr(500, `${msg} (${detail})`);
+    err.pg = code;
     throw err;
   }
   return data;
