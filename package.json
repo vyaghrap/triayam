@@ -1,0 +1,8 @@
+{
+  "name": "triayam-stall-tracker",
+  "version": "4.0.0",
+  "description": "TriAyam stall sales tracker - Netlify + Supabase",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=18" }
+}
