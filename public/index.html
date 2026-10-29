@@ -61,6 +61,7 @@
                     <label class="block text-xs font-semibold text-slate-700 mb-1">Password</label>
                     <input type="password" id="loginPassword" required autocomplete="current-password" placeholder="••••••••" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-800 focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500">
                 </div>
+                <div id="loginError" class="hidden text-xs font-semibold text-rose-700 bg-rose-50 border border-rose-200 rounded-lg px-3 py-2 break-words"></div>
                 <button type="submit" class="w-full bg-gradient-to-r from-teal-600 via-cyan-600 to-sky-600 hover:from-teal-500 hover:to-sky-500 text-white font-bold py-2.5 rounded-xl transition-all shadow-md shadow-teal-600/20 flex items-center justify-center gap-2 cursor-pointer">
                     <i data-lucide="log-in" class="w-4 h-4"></i> Sign In
                 </button>
@@ -69,7 +70,7 @@
     </div>
 
     <!-- Toast -->
-    <div id="toast" class="fixed bottom-5 right-5 z-[60] transform transition-all duration-300 translate-y-20 opacity-0 bg-teal-700 text-white px-5 py-3 rounded-xl shadow-2xl flex items-center gap-3 border border-teal-500/30">
+    <div id="toast" class="fixed top-4 left-1/2 -translate-x-1/2 z-[70] w-[92%] max-w-md transform transition-all duration-300 -translate-y-24 opacity-0 pointer-events-none bg-teal-700 text-white px-5 py-3 rounded-xl shadow-2xl flex items-center gap-3 border border-teal-500/30">
         <span id="toastIconWrap" class="flex"></span>
         <span id="toastMsg" class="font-medium text-sm">Action completed successfully!</span>
     </div>
@@ -787,6 +788,8 @@
         ============================================================ */
         async function handleLogin(e) {
             e.preventDefault();
+            const errBox = document.getElementById('loginError');
+            errBox.classList.add('hidden');
             try {
                 const d = await api('POST', '/api/login', {
                     email: document.getElementById('loginEmail').value.trim(),
@@ -799,7 +802,11 @@
                 await refresh(true);
                 closeModal('loginOverlay');
                 showToast(`Welcome back, ${currentUser.name}!`);
-            } catch (err) { reportError(err); }
+            } catch (err) {
+                errBox.textContent = (err && err.message) || 'Sign-in failed.';
+                errBox.classList.remove('hidden');
+                reportError(err);
+            }
         }
 
         function clearLocalSession() {
@@ -853,12 +860,12 @@
             const toast = document.getElementById('toast');
             document.getElementById('toastMsg').innerText = msg;
             const color = type === "error" ? "bg-rose-600 border-rose-400/30" : "bg-cyan-600 border-cyan-400/30";
-            toast.className = `fixed bottom-5 right-5 z-[60] transform transition-all duration-300 translate-y-0 opacity-100 ${color} text-white px-5 py-3 rounded-xl shadow-2xl flex items-center gap-3 border max-w-sm`;
+            toast.className = `fixed top-4 left-1/2 -translate-x-1/2 z-[70] w-[92%] max-w-md transform transition-all duration-300 translate-y-0 opacity-100 ${color} text-white px-5 py-3 rounded-xl shadow-2xl flex items-center gap-3 border`;
             document.getElementById('toastIconWrap').innerHTML =
                 `<i data-lucide="${type === 'error' ? 'alert-triangle' : 'check-circle'}" class="w-5 h-5"></i>`;
             lucide.createIcons();
             clearTimeout(toastTimer);
-            toastTimer = setTimeout(() => toast.classList.add('translate-y-20', 'opacity-0'), 3500);
+            toastTimer = setTimeout(() => toast.classList.add('-translate-y-24', 'opacity-0', 'pointer-events-none'), 3500);
         }
 
         /* ============================================================
