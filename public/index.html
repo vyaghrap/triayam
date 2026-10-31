@@ -5,12 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TriAyam - Stall Sales & Invoice Tracker</title>
 
-    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/tailwind.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Montserrat:wght@600;700;800&display=swap" rel="stylesheet">
-    <script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script defer src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
 
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #f0f9ff; color: #0f172a; }
@@ -41,9 +40,9 @@
     <div id="standalonePrintContainer" class="hidden"></div>
 
     <!-- LOGIN OVERLAY -->
-    <div id="loginOverlay" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-xl transition-all duration-300">
+    <div id="loginOverlay" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 transition-all duration-300">
         <div class="bg-white border border-sky-200 rounded-2xl w-full max-w-md p-6 sm:p-8 shadow-2xl relative overflow-hidden">
-            <div class="absolute -right-10 -top-10 w-36 h-36 bg-teal-500/10 rounded-full blur-2xl"></div>
+            <div class="absolute -right-10 -top-10 w-36 h-36 bg-teal-500/10 rounded-full"></div>
             <div class="text-center mb-6">
                 <div class="w-20 h-20 mx-auto flex items-center justify-center mb-3">
                     <img class="brand-logo w-full h-full object-contain drop-shadow-md" alt="Logo">
@@ -77,7 +76,7 @@
     </div>
 
     <!-- Header -->
-    <header class="bg-white/90 backdrop-blur-md border-b border-sky-200/80 sticky top-0 z-30 px-4 lg:px-8 py-3 shadow-sm">
+    <header class="bg-white/90 border-b border-sky-200/80 sticky top-0 z-30 px-4 lg:px-8 py-3 shadow-sm">
         <div class="max-w-7xl mx-auto flex flex-col lg:flex-row items-center justify-between gap-4">
             <div class="flex items-center gap-3">
                 <div class="w-12 h-12 flex items-center justify-center">
@@ -131,7 +130,7 @@
 
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div class="bg-white rounded-2xl p-5 border border-sky-200/80 shadow-sm relative overflow-hidden group hover:border-teal-400 transition-all">
-                <div class="absolute -right-2 -bottom-2 w-20 h-20 bg-teal-500/10 rounded-full blur-xl group-hover:bg-teal-500/20 transition-all"></div>
+                <div class="absolute -right-2 -bottom-2 w-20 h-20 bg-teal-500/10 rounded-full group-hover:bg-teal-500/20 transition-all"></div>
                 <div class="flex items-center justify-between text-slate-500 mb-2">
                     <span class="text-xs font-semibold uppercase tracking-wider">Total Collected</span>
                     <div class="w-8 h-8 rounded-lg bg-teal-50 flex items-center justify-center text-teal-600"><i data-lucide="indian-rupee" class="w-4 h-4"></i></div>
@@ -143,7 +142,7 @@
             </div>
 
             <div class="bg-white rounded-2xl p-5 border border-sky-200/80 shadow-sm relative overflow-hidden group hover:border-sky-400 transition-all">
-                <div class="absolute -right-2 -bottom-2 w-20 h-20 bg-sky-500/10 rounded-full blur-xl group-hover:bg-sky-500/20 transition-all"></div>
+                <div class="absolute -right-2 -bottom-2 w-20 h-20 bg-sky-500/10 rounded-full group-hover:bg-sky-500/20 transition-all"></div>
                 <div class="flex items-center justify-between text-slate-500 mb-2">
                     <span class="text-xs font-semibold uppercase tracking-wider">Total Sales</span>
                     <div class="w-8 h-8 rounded-lg bg-sky-50 flex items-center justify-center text-sky-600"><i data-lucide="shopping-bag" class="w-4 h-4"></i></div>
@@ -153,7 +152,7 @@
             </div>
 
             <div class="bg-white rounded-2xl p-5 border border-sky-200/80 shadow-sm relative overflow-hidden group hover:border-amber-400 transition-all">
-                <div class="absolute -right-2 -bottom-2 w-20 h-20 bg-amber-500/10 rounded-full blur-xl group-hover:bg-amber-500/20 transition-all"></div>
+                <div class="absolute -right-2 -bottom-2 w-20 h-20 bg-amber-500/10 rounded-full group-hover:bg-amber-500/20 transition-all"></div>
                 <div class="flex items-center justify-between text-slate-500 mb-2">
                     <span class="text-xs font-semibold uppercase tracking-wider">UPI / Cash / Card</span>
                     <div class="w-8 h-8 rounded-lg bg-amber-50 flex items-center justify-center text-amber-600"><i data-lucide="qr-code" class="w-4 h-4"></i></div>
@@ -163,7 +162,7 @@
             </div>
 
             <div class="bg-white rounded-2xl p-5 border border-sky-200/80 shadow-sm relative overflow-hidden group hover:border-cyan-400 transition-all">
-                <div class="absolute -right-2 -bottom-2 w-20 h-20 bg-cyan-500/10 rounded-full blur-xl group-hover:bg-cyan-500/20 transition-all"></div>
+                <div class="absolute -right-2 -bottom-2 w-20 h-20 bg-cyan-500/10 rounded-full group-hover:bg-cyan-500/20 transition-all"></div>
                 <div class="flex items-center justify-between text-slate-500 mb-2">
                     <span class="text-xs font-semibold uppercase tracking-wider">Top Product</span>
                     <div class="w-8 h-8 rounded-lg bg-cyan-50 flex items-center justify-center text-cyan-700"><i data-lucide="box" class="w-4 h-4"></i></div>
@@ -177,7 +176,7 @@
         <div class="bg-white rounded-2xl p-4 border border-sky-200/80 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
             <div class="relative w-full md:w-80">
                 <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
-                <input type="text" id="searchInput" oninput="renderTable()" placeholder="Search Name, Phone, Invoice No..." class="w-full bg-slate-50 border border-slate-300 text-sm text-slate-800 pl-10 pr-4 py-2 rounded-xl focus:outline-none focus:border-teal-500 transition-colors placeholder:text-slate-400">
+                <input type="text" id="searchInput" oninput="debouncedRender()" placeholder="Search Name, Phone, Invoice No..." class="w-full bg-slate-50 border border-slate-300 text-sm text-slate-800 pl-10 pr-4 py-2 rounded-xl focus:outline-none focus:border-teal-500 transition-colors placeholder:text-slate-400">
             </div>
             <div class="flex flex-wrap items-center gap-3 w-full md:w-auto">
                 <select id="statusFilter" onchange="renderTable()" class="bg-slate-50 border border-slate-300 text-xs text-slate-700 px-3 py-2 rounded-xl focus:outline-none focus:border-teal-500">
@@ -223,6 +222,9 @@
                     <tbody id="transactionsTableBody" class="divide-y divide-sky-100 text-slate-700 font-normal"></tbody>
                 </table>
             </div>
+            <div id="moreRowsWrap" class="hidden p-3 text-center border-t border-sky-100">
+                <button id="moreRowsBtn" onclick="showMoreRows()" class="text-xs font-bold text-teal-700 bg-sky-50 hover:bg-sky-100 border border-sky-200 px-4 py-2 rounded-lg">Show more</button>
+            </div>
             <div id="emptyState" class="hidden p-12 text-center text-slate-400 space-y-3">
                 <i data-lucide="inbox" class="w-12 h-12 mx-auto text-slate-300"></i>
                 <p class="text-base font-medium text-slate-600">No customer sales transactions found</p>
@@ -232,7 +234,7 @@
     </main>
 
     <!-- TRANSACTION MODAL -->
-    <div id="transactionModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm opacity-0 pointer-events-none transition-all duration-300">
+    <div id="transactionModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 opacity-0 pointer-events-none transition-all duration-300">
         <div class="bg-white border border-sky-200 rounded-2xl w-full max-w-3xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden transform scale-95 transition-all duration-300">
             <div class="px-6 py-4 bg-sky-50 border-b border-sky-200 flex items-center justify-between">
                 <div class="flex items-center gap-3">
@@ -333,16 +335,17 @@
                     </div>
                 </div>
 
-                <div class="pt-4 flex justify-end gap-3 border-t border-slate-200">
-                    <button type="button" onclick="closeModal('transactionModal')" class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold">Cancel</button>
-                    <button type="submit" class="px-6 py-2 rounded-xl bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-500 hover:to-cyan-500 text-white font-bold shadow-md shadow-teal-600/20">Save Transaction</button>
+                <div class="pt-4 flex flex-col-reverse sm:flex-row sm:justify-end gap-2 sm:gap-3 border-t border-slate-200 pb-20 sm:pb-0">
+                    <button type="button" onclick="closeModal('transactionModal')" class="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold">Cancel</button>
+                    <button type="submit" onclick="sendAfterSave = false" class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-500 hover:to-cyan-500 text-white font-bold shadow-md shadow-teal-600/20">Save</button>
+                    <button type="submit" onclick="sendAfterSave = true" class="px-5 py-2.5 rounded-xl bg-green-600 hover:bg-green-500 text-white font-bold shadow-md shadow-green-600/20">Save &amp; Send on WhatsApp</button>
                 </div>
             </form>
         </div>
     </div>
 
     <!-- INVOICE MODAL -->
-    <div id="invoiceModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm opacity-0 pointer-events-none transition-all duration-300">
+    <div id="invoiceModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 opacity-0 pointer-events-none transition-all duration-300">
         <div class="bg-white border border-sky-200 rounded-2xl w-full max-w-2xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden transform scale-95 transition-all duration-300">
             <div class="px-6 py-4 bg-sky-50 border-b border-sky-200 flex items-center justify-between no-print">
                 <div class="flex items-center gap-2">
@@ -350,18 +353,57 @@
                     <h3 class="text-base font-bold text-slate-800">Stall Receipt / Invoice</h3>
                 </div>
                 <div class="flex items-center gap-2">
+                    <button onclick="openWhatsApp(currentInvoiceId)" class="bg-green-600 hover:bg-green-500 text-white font-bold px-3.5 py-1.5 rounded-lg text-xs flex items-center gap-1.5 cursor-pointer shadow-sm">
+                        <i data-lucide="message-circle" class="w-4 h-4"></i> WhatsApp
+                    </button>
                     <button onclick="triggerPrintInvoice()" class="bg-teal-600 hover:bg-teal-500 text-white font-bold px-3.5 py-1.5 rounded-lg text-xs flex items-center gap-1.5 cursor-pointer shadow-sm">
                         <i data-lucide="printer" class="w-4 h-4"></i> Print Receipt
                     </button>
-                    <button onclick="closeModal('invoiceModal')" class="text-slate-400 hover:text-slate-700 p-1 rounded-lg"><i data-lucide="x" class="w-5 h-5"></i></button>
+                    <button onclick="closeModal('invoiceModal')" aria-label="Close" class="text-slate-400 hover:text-slate-700 p-1 rounded-lg"><i data-lucide="x" class="w-5 h-5"></i></button>
                 </div>
             </div>
             <div class="p-6 overflow-y-auto flex-1 bg-white text-slate-900 text-xs sm:text-sm" id="printableInvoiceArea"></div>
         </div>
     </div>
 
+    <!-- WHATSAPP MODAL -->
+    <div id="waModal" class="fixed inset-0 z-[55] flex items-center justify-center p-4 bg-slate-900/50 opacity-0 pointer-events-none transition-all duration-300">
+        <div class="bg-white border border-green-200 rounded-2xl w-full max-w-lg max-h-[92vh] flex flex-col shadow-2xl overflow-hidden transform scale-95 transition-all duration-300">
+            <div class="px-5 py-4 bg-green-50 border-b border-green-200 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="p-2 rounded-xl bg-green-100 text-green-700"><i data-lucide="message-circle" class="w-5 h-5"></i></div>
+                    <div>
+                        <h3 class="text-base font-bold text-slate-800">Send invoice on WhatsApp</h3>
+                        <p id="waSub" class="text-xs text-slate-500"></p>
+                    </div>
+                </div>
+                <button onclick="closeWhatsApp()" aria-label="Cancel" class="text-slate-400 hover:text-slate-700 p-1 rounded-lg"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <div class="p-5 overflow-y-auto space-y-4 flex-1 text-xs sm:text-sm">
+                <div>
+                    <label class="block text-slate-700 text-xs font-semibold mb-1">WhatsApp number</label>
+                    <div class="flex items-center gap-2">
+                        <span class="text-slate-500 font-bold">+</span>
+                        <input type="tel" id="waCC" inputmode="numeric" maxlength="4" value="91" oninput="updateWaLink()" aria-label="Country code" class="w-16 bg-slate-50 border border-slate-300 rounded-xl px-2 py-2 text-center text-slate-800 focus:outline-none focus:border-green-500">
+                        <input type="tel" id="waPhone" inputmode="numeric" maxlength="15" oninput="updateWaLink()" placeholder="Mobile number" class="flex-1 bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-800 focus:outline-none focus:border-green-500">
+                    </div>
+                    <p id="waHint" class="text-[11px] mt-1.5 text-slate-500"></p>
+                </div>
+                <div>
+                    <label class="block text-slate-700 text-xs font-semibold mb-1">Message (you can edit it)</label>
+                    <textarea id="waMsg" rows="9" oninput="updateWaLink()" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-800 text-xs font-mono focus:outline-none focus:border-green-500"></textarea>
+                </div>
+                <p class="text-[11px] text-slate-500">This opens WhatsApp with the message ready; tap Send there. If the number is not on WhatsApp or is unknown, come back and tap Cancel. Your sale is already saved either way.</p>
+            </div>
+            <div class="px-5 py-4 border-t border-slate-200 flex flex-col-reverse sm:flex-row sm:justify-end gap-2 sm:gap-3 pb-20 sm:pb-4">
+                <button type="button" onclick="closeWhatsApp()" class="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-center">Cancel - don't send</button>
+                <a id="waSendLink" href="#" target="_blank" rel="noopener" onclick="return onWaSendClick(event)" class="px-5 py-2.5 rounded-xl bg-green-600 hover:bg-green-500 text-white font-bold shadow-md shadow-green-600/20 text-center">Open WhatsApp</a>
+            </div>
+        </div>
+    </div>
+
     <!-- USER MANAGEMENT MODAL -->
-    <div id="userManagementModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm opacity-0 pointer-events-none transition-all duration-300">
+    <div id="userManagementModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 opacity-0 pointer-events-none transition-all duration-300">
         <div class="bg-white border border-sky-200 rounded-2xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden transform scale-95 transition-all duration-300">
             <div class="px-6 py-4 bg-sky-50 border-b border-sky-200 flex items-center justify-between">
                 <div class="flex items-center gap-3">
@@ -411,7 +453,7 @@
     </div>
 
     <!-- CATALOG MODAL -->
-    <div id="catalogModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm opacity-0 pointer-events-none transition-all duration-300">
+    <div id="catalogModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 opacity-0 pointer-events-none transition-all duration-300">
         <div class="bg-white border border-sky-200 rounded-2xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden transform scale-95 transition-all duration-300">
             <div class="px-6 py-4 bg-amber-50 border-b border-amber-200 flex items-center justify-between">
                 <div class="flex items-center gap-3">
@@ -472,7 +514,7 @@
     </div>
 
     <!-- BRAND SETTINGS MODAL (SUPER ADMIN ONLY) -->
-    <div id="brandModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm opacity-0 pointer-events-none transition-all duration-300">
+    <div id="brandModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 opacity-0 pointer-events-none transition-all duration-300">
         <div class="bg-white border border-violet-200 rounded-2xl w-full max-w-3xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden transform scale-95 transition-all duration-300">
             <div class="px-6 py-4 bg-violet-50 border-b border-violet-200 flex items-center justify-between">
                 <div class="flex items-center gap-3">
@@ -680,13 +722,14 @@
                 applyBranding();
                 applyUserPermissions();
                 updateStats();
-                renderTable();
+                renderTable(false);
                 if (isOpen('userManagementModal')) renderUsersList();
                 if (isOpen('catalogModal')) renderCatalogList();
                 return true;
             } finally { refreshing = false; }
         }
 
+        const icons = () => { try { if (window.lucide) window.lucide.createIcons(); } catch (e) { /* icons are decorative */ } };
         const isOpen = id => !document.getElementById(id).classList.contains('opacity-0');
 
         /* ============================================================
@@ -751,7 +794,7 @@
            INIT & AUTO-SYNC
         ============================================================ */
         window.addEventListener('DOMContentLoaded', async () => {
-            lucide.createIcons();
+            icons();
             applyBranding();
             // Show the brand on the login screen before anyone signs in
             fetch('/api/public-brand').then(r => r.json()).then(b => {
@@ -782,7 +825,7 @@
         document.addEventListener('keydown', e => {
             if (e.key !== 'Escape') return;
             hideToast();
-            ['brandModal', 'userManagementModal', 'catalogModal', 'invoiceModal', 'transactionModal'].forEach(closeModal);
+            ['waModal', 'brandModal', 'userManagementModal', 'catalogModal', 'invoiceModal', 'transactionModal'].forEach(closeModal);
         });
 
         /* ============================================================
@@ -815,7 +858,7 @@
             try { localStorage.removeItem('triayam_token'); } catch (e) { /* ignore */ }
             currentUser = null; serverRev = 0;
             transactions = []; productCatalog = []; systemUsers = [];
-            ['brandModal', 'userManagementModal', 'catalogModal', 'invoiceModal', 'transactionModal'].forEach(closeModal);
+            ['waModal', 'brandModal', 'userManagementModal', 'catalogModal', 'invoiceModal', 'transactionModal'].forEach(closeModal);
             updateStats(); renderTable();
             showModal('loginOverlay');
         }
@@ -863,8 +906,7 @@
             const color = type === "error" ? "bg-rose-600 border-rose-400/30" : "bg-cyan-600 border-cyan-400/30";
             toast.className = `fixed top-4 left-1/2 -translate-x-1/2 z-[70] w-[92%] max-w-md transform transition-all duration-300 translate-y-0 opacity-100 ${color} text-white px-5 py-3 rounded-xl shadow-2xl flex items-center gap-3 border`;
             document.getElementById('toastIconWrap').innerHTML =
-                `<i data-lucide="${type === 'error' ? 'alert-triangle' : 'check-circle'}" class="w-5 h-5"></i>`;
-            lucide.createIcons();
+                `<span class="text-lg leading-none">${type === 'error' ? '&#9888;' : '&#10003;'}</span>`;
             clearTimeout(toastTimer);
             toastTimer = setTimeout(hideToast, type === "error" ? 8000 : 2500);
         }
@@ -920,7 +962,14 @@
         /* ============================================================
            LEDGER TABLE
         ============================================================ */
-        function renderTable() {
+        const PAGE_SIZE = 50;
+        let visibleCount = PAGE_SIZE;
+        let renderTimer = null;
+        function debouncedRender() { clearTimeout(renderTimer); renderTimer = setTimeout(() => renderTable(), 200); }
+        function showMoreRows() { visibleCount += PAGE_SIZE; renderTable(false); }
+
+        function renderTable(resetPaging = true) {
+            if (resetPaging) visibleCount = PAGE_SIZE;
             const tbody = document.getElementById('transactionsTableBody');
             const search = document.getElementById('searchInput').value.toLowerCase().trim();
             const statusF = document.getElementById('statusFilter').value;
@@ -940,7 +989,12 @@
             document.getElementById('emptyState').classList.toggle('hidden', filtered.length > 0);
             const admin = isAdminLevel();
 
-            tbody.innerHTML = filtered.map(t => {
+            const shown = filtered.slice(0, visibleCount);
+            const moreWrap = document.getElementById('moreRowsWrap');
+            moreWrap.classList.toggle('hidden', filtered.length <= shown.length);
+            document.getElementById('moreRowsBtn').textContent = `Show more (${filtered.length - shown.length} more)`;
+
+            tbody.innerHTML = shown.map(t => {
                 let badge = "bg-teal-50 text-teal-700 border-teal-300";
                 if (t.paymentStatus === 'Partial') badge = "bg-amber-50 text-amber-700 border-amber-300";
                 if (t.paymentStatus === 'Pending') badge = "bg-rose-50 text-rose-700 border-rose-300";
@@ -969,6 +1023,7 @@
                     </td>
                     <td class="py-3 px-4 text-center">
                         <div class="flex items-center justify-center gap-1.5">
+                            <button onclick="openWhatsApp('${t.id}')" title="Send invoice on WhatsApp" class="p-1.5 bg-green-50 hover:bg-green-100 text-green-700 rounded-lg border border-green-200 transition-colors"><i data-lucide="message-circle" class="w-4 h-4"></i></button>
                             <button onclick="viewInvoice('${t.id}')" title="Print Invoice" class="p-1.5 bg-sky-50 hover:bg-sky-100 text-teal-700 rounded-lg border border-sky-200 transition-colors"><i data-lucide="printer" class="w-4 h-4"></i></button>
                             ${admin ? `
                             <button onclick="editTransaction('${t.id}')" title="Edit Transaction" class="p-1.5 bg-amber-50 hover:bg-amber-100 text-amber-700 rounded-lg border border-amber-200 transition-colors"><i data-lucide="edit-3" class="w-4 h-4"></i></button>
@@ -977,7 +1032,7 @@
                     </td>
                 </tr>`;
             }).join('');
-            lucide.createIcons();
+            icons();
         }
 
         function resetFilters() {
@@ -1066,7 +1121,7 @@
                     <button type="button" onclick="removeFormItemRow(this)" class="text-rose-500 hover:text-rose-700 p-1"><i data-lucide="trash" class="w-4 h-4"></i></button>
                 </div>`;
             document.getElementById('formItemsContainer').appendChild(row);
-            lucide.createIcons();
+            icons();
             calculateFormTotals();
         }
 
@@ -1094,6 +1149,7 @@
             calculateFormTotals();
         }
 
+        let sendAfterSave = false;
         async function handleSaveTransaction(e) {
             e.preventDefault();
             const editId = document.getElementById('editingIndex').value;
@@ -1120,16 +1176,20 @@
             const submitBtn = document.querySelector('#txnForm button[type="submit"]');
             submitBtn.disabled = true;
             try {
+                let saved;
                 if (editId) {
                     payload.version = parseInt(document.getElementById('editingVersion').value, 10);
-                    await api('PUT', '/api/transactions/' + encodeURIComponent(editId), payload);
+                    saved = (await api('PUT', '/api/transactions/' + encodeURIComponent(editId), payload)).transaction;
                     showToast("Transaction updated!");
                 } else {
-                    const d = await api('POST', '/api/transactions', payload);
-                    showToast(`Sale saved as ${d.transaction.invoiceNo}`);
+                    saved = (await api('POST', '/api/transactions', payload)).transaction;
+                    showToast(`Sale saved as ${saved.invoiceNo}`);
                 }
                 closeModal('transactionModal');
-                await refresh(true);
+                const wantWhatsApp = sendAfterSave;
+                sendAfterSave = false;
+                refresh(true).catch(() => {});
+                if (wantWhatsApp && saved) openWhatsApp(normalizeTxn(saved));
             } catch (err) {
                 reportError(err);
                 if (err.status === 409 || err.status === 404) { closeModal('transactionModal'); refresh(true).catch(() => {}); }
@@ -1172,9 +1232,11 @@
         /* ============================================================
            INVOICE
         ============================================================ */
+        let currentInvoiceId = '';
         function viewInvoice(id) {
             const t = transactions.find(x => x.id === id);
             if (!t) return;
+            currentInvoiceId = id;
             const c = calcTotals(t.items, t.discount, t.gstRate);
             const balance = Math.max(0, t.total - t.amountPaid);
             const contact = [brand.address, brand.phone && ('Ph: ' + brand.phone), brand.email, brand.website].filter(Boolean).map(escapeHtml).join(' | ');
@@ -1262,12 +1324,108 @@
             }, 150);
         }
 
+
+        /* ============================================================
+           WHATSAPP
+        ============================================================ */
+        let waTxn = null;
+
+        function toWaNumber(raw, cc) {
+            let d = String(raw || '').replace(/\D/g, '');
+            const code = String(cc || '').replace(/\D/g, '');
+            if (d.startsWith('00')) d = d.slice(2);
+            else if (d.length === 11 && d.startsWith('0')) d = code + d.slice(1);
+            else if (d.length === 10) d = code + d;
+            return d.length >= 11 && d.length <= 15 ? d : '';
+        }
+
+        function buildWhatsAppMessage(t) {
+            const c = calcTotals(t.items, t.discount, t.gstRate);
+            const balance = Math.max(0, t.total - t.amountPaid);
+            return [
+                `*${brand.invoiceName || brand.name}*`,
+                brand.address || null,
+                brand.phone ? `Ph: ${brand.phone}` : null,
+                brand.gstin ? `GSTIN: ${brand.gstin}` : null,
+                '',
+                `*Invoice:* ${t.invoiceNo}`,
+                `*Date:* ${t.dateTime.replace('T', ' ')}`,
+                `*Customer:* ${t.customerName}`,
+                '',
+                '*Items*',
+                ...t.items.map((i, n) => `${n + 1}. ${i.name} x${i.qty} - ${money(i.qty * i.price)}`),
+                '',
+                `Subtotal: ${money(c.subtotal)}`,
+                c.discount > 0 ? `Discount: -${money(c.discount)}` : null,
+                t.gstRate > 0 ? `GST (${t.gstRate}% incl.): ${money(c.gst)}` : null,
+                `*Total: ${money(t.total)}*`,
+                `Paid (${t.paymentMethod}): ${money(t.amountPaid)}`,
+                balance > 0 ? `*Balance due: ${money(balance)}*` : null,
+                '',
+                brand.footer || null
+            ].filter(line => line !== null).join('\n');
+        }
+
+        function openWhatsApp(ref) {
+            const t = (ref && typeof ref === 'object') ? ref : transactions.find(x => x.id === ref);
+            if (!t) return showToast("Sale not found.", "error");
+            waTxn = t;
+            let cc = '91';
+            try { cc = localStorage.getItem('triayam_cc') || '91'; } catch (e) { /* ignore */ }
+            document.getElementById('waCC').value = cc;
+            document.getElementById('waPhone').value = t.customerPhone || '';
+            document.getElementById('waMsg').value = buildWhatsAppMessage(t);
+            document.getElementById('waSub').textContent = `${t.invoiceNo} • ${t.customerName} • ${money(t.total)}`;
+            updateWaLink();
+            showModal('waModal');
+            icons();
+        }
+
+        function updateWaLink() {
+            const link = document.getElementById('waSendLink');
+            const hint = document.getElementById('waHint');
+            const num = toWaNumber(document.getElementById('waPhone').value, document.getElementById('waCC').value);
+            const msg = document.getElementById('waMsg').value;
+            if (num) {
+                link.href = `https://wa.me/${num}?text=${encodeURIComponent(msg)}`;
+                link.classList.remove('opacity-50', 'pointer-events-none');
+                hint.className = 'text-[11px] mt-1.5 text-green-700';
+                hint.textContent = `Will open a WhatsApp chat with +${num}`;
+            } else {
+                link.href = '#';
+                link.classList.add('opacity-50', 'pointer-events-none');
+                hint.className = 'text-[11px] mt-1.5 text-rose-600 font-semibold';
+                hint.textContent = 'Enter a valid mobile number, or tap Cancel to skip.';
+            }
+        }
+
+        function onWaSendClick(e) {
+            const num = toWaNumber(document.getElementById('waPhone').value, document.getElementById('waCC').value);
+            if (!num) { e.preventDefault(); return false; }
+            try { localStorage.setItem('triayam_cc', document.getElementById('waCC').value.replace(/\D/g, '') || '91'); } catch (err) { /* ignore */ }
+            setTimeout(() => closeModal('waModal'), 400);
+            return true;
+        }
+
+        function closeWhatsApp() { waTxn = null; closeModal('waModal'); }
+
         /* ============================================================
            EXCEL EXPORT
         ============================================================ */
-        function exportToExcel() {
+        function loadXlsx() {
+            if (window.XLSX && window.XLSX.utils) return Promise.resolve();
+            return new Promise((resolve, reject) => {
+                const el = document.createElement('script');
+                el.src = 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';
+                el.onload = resolve;
+                el.onerror = () => reject(new Error("Excel library failed to load. Check your internet connection."));
+                document.head.appendChild(el);
+            });
+        }
+
+        async function exportToExcel() {
             if (!isAdminLevel()) return showToast("Only admins can export data.", "error");
-            if (typeof XLSX === 'undefined') return showToast("Excel library failed to load. Check your internet connection.", "error");
+            try { await loadXlsx(); } catch (e) { return showToast(e.message, "error"); }
             if (transactions.length === 0) return showToast("No transaction records to export.", "error");
             const rows = transactions.map(t => {
                 const c = calcTotals(t.items, t.discount, t.gstRate);
@@ -1365,7 +1523,7 @@
                         ${admin ? `<button onclick="deleteCatalogItem('${item.id}')" title="Delete Item" class="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg border border-rose-200 transition-colors"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>` : ''}
                     </div>
                 </div>`).join('');
-            lucide.createIcons();
+            icons();
         }
 
         /* ============================================================
