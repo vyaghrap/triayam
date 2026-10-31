@@ -251,23 +251,31 @@ async function route(req, context) {
     const email = str(b.email, 120).toLowerCase();
     const ip = (context && context.ip) || req.headers.get('x-nf-client-connection-ip') || 'unknown';
     const rk = sha(ip + '|' + email);
-    await checkRate(rk);
-    await ensureSeed();
+    await Promise.all([checkRate(rk), ensureSeed()]);
     const rows = await sb('GET', `/app_users?email=eq.${enc(email)}&select=*&limit=1`);
     const user = rows[0];
     const ok = await verifyPw(String(b.password ?? ''), user ? user.password_hash : await getDummyHash());
     if (!user || !ok) { await noteFail(rk); throw httpErr(401, 'Invalid credentials provided.'); }
     if (user.active === false) throw httpErr(403, 'This account has been deactivated.');
-    await sb('DELETE', `/login_attempts?key=eq.${rk}`, { prefer: 'return=minimal' });
-    await sb('DELETE', `/sessions?exp=lt.${enc(new Date().toISOString())}`, { prefer: 'return=minimal' });
     const token = crypto.randomBytes(32).toString('hex');
-    await sb('POST', '/sessions', {
-      body: { key_hash: sha(token), user_id: user.id, exp: new Date(Date.now() + SESSION_MS).toISOString() },
-      prefer: 'return=minimal'
-    });
+    await Promise.all([
+      sb('DELETE', `/login_attempts?key=eq.${rk}`, { prefer: 'return=minimal' }),
+      sb('DELETE', `/sessions?exp=lt.${enc(new Date().toISOString())}`, { prefer: 'return=minimal' }),
+      sb('POST', '/sessions', {
+        body: { key_hash: sha(token), user_id: user.id, exp: new Date(Date.now() + SESSION_MS).toISOString() },
+        prefer: 'return=minimal'
+      })
+    ]);
     return json(200, { token, me: publicUser(user) });
   }
 
+  // Start the database reads these routes need at the same time as the session check (saves a round trip).
+  let prefetch = null;
+  if (req.headers.get('authorization')) {
+    if (method === 'GET' && p === '/api/bootstrap') prefetch = sb('GET', '/app_meta?id=eq.1&select=rev');
+    else if (method === 'POST' && p === '/api/transactions') prefetch = getBrand();
+    if (prefetch) prefetch.catch(() => {});
+  }
   const auth = await authenticate(req);
   if (!auth) throw httpErr(401, 'Please sign in.');
   const me = auth.user;
@@ -281,7 +289,7 @@ async function route(req, context) {
 
   if (method === 'GET' && p === '/api/bootstrap') {
     const since = parseInt(url.searchParams.get('since'), 10);
-    const meta = await sb('GET', '/app_meta?id=eq.1&select=rev');
+    const meta = await prefetch;
     const rev = Number(meta[0] && meta[0].rev);
     if (since === rev) return json(200, { unchanged: true, rev, me: publicUser(me) });
     const [brand, catalog, txns, users] = await Promise.all([
@@ -354,7 +362,7 @@ async function route(req, context) {
   /* transactions */
   if (method === 'POST' && p === '/api/transactions') {
     const b = await readBody(req);
-    const brand = await getBrand();
+    const brand = await prefetch;
     const data = buildTxn(b, null, brand.gstRate);
     for (let attempt = 0; attempt < 4; attempt++) {
       const seq = await sb('POST', '/rpc/next_counter', { body: {} });
