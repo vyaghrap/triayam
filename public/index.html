@@ -366,38 +366,45 @@
         </div>
     </div>
 
-    <!-- WHATSAPP MODAL -->
+    <!-- WHATSAPP MODAL (PDF) -->
     <div id="waModal" class="fixed inset-0 z-[55] flex items-center justify-center p-4 bg-slate-900/50 opacity-0 pointer-events-none transition-all duration-300">
         <div class="bg-white border border-green-200 rounded-2xl w-full max-w-lg max-h-[92vh] flex flex-col shadow-2xl overflow-hidden transform scale-95 transition-all duration-300">
             <div class="px-5 py-4 bg-green-50 border-b border-green-200 flex items-center justify-between">
                 <div class="flex items-center gap-3">
                     <div class="p-2 rounded-xl bg-green-100 text-green-700"><i data-lucide="message-circle" class="w-5 h-5"></i></div>
                     <div>
-                        <h3 class="text-base font-bold text-slate-800">Send invoice on WhatsApp</h3>
+                        <h3 class="text-base font-bold text-slate-800">Send invoice PDF on WhatsApp</h3>
                         <p id="waSub" class="text-xs text-slate-500"></p>
                     </div>
                 </div>
                 <button onclick="closeWhatsApp()" aria-label="Cancel" class="text-slate-400 hover:text-slate-700 p-1 rounded-lg"><i data-lucide="x" class="w-5 h-5"></i></button>
             </div>
             <div class="p-5 overflow-y-auto space-y-4 flex-1 text-xs sm:text-sm">
+                <div id="waStatus" class="flex items-center justify-between gap-2 text-xs rounded-lg border px-3 py-2"></div>
                 <div>
-                    <label class="block text-slate-700 text-xs font-semibold mb-1">WhatsApp number</label>
+                    <label class="block text-slate-700 text-xs font-semibold mb-1">Customer's WhatsApp number</label>
                     <div class="flex items-center gap-2">
                         <span class="text-slate-500 font-bold">+</span>
-                        <input type="tel" id="waCC" inputmode="numeric" maxlength="4" value="91" oninput="updateWaLink()" aria-label="Country code" class="w-16 bg-slate-50 border border-slate-300 rounded-xl px-2 py-2 text-center text-slate-800 focus:outline-none focus:border-green-500">
-                        <input type="tel" id="waPhone" inputmode="numeric" maxlength="15" oninput="updateWaLink()" placeholder="Mobile number" class="flex-1 bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-800 focus:outline-none focus:border-green-500">
+                        <input type="tel" id="waCC" inputmode="numeric" maxlength="4" value="91" oninput="updateWaUi()" aria-label="Country code" class="w-16 bg-slate-50 border border-slate-300 rounded-xl px-2 py-2 text-center text-slate-800 focus:outline-none focus:border-green-500">
+                        <input type="tel" id="waPhone" inputmode="numeric" maxlength="15" oninput="updateWaUi()" placeholder="Mobile number" class="flex-1 bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-800 focus:outline-none focus:border-green-500">
                     </div>
                     <p id="waHint" class="text-[11px] mt-1.5 text-slate-500"></p>
                 </div>
                 <div>
-                    <label class="block text-slate-700 text-xs font-semibold mb-1">Message (you can edit it)</label>
-                    <textarea id="waMsg" rows="9" oninput="updateWaLink()" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-800 text-xs font-mono focus:outline-none focus:border-green-500"></textarea>
+                    <label class="block text-slate-700 text-xs font-semibold mb-1">Message with the PDF (you can edit it)</label>
+                    <textarea id="waCaption" rows="3" oninput="updateWaUi()" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-800 text-xs focus:outline-none focus:border-green-500"></textarea>
                 </div>
-                <p class="text-[11px] text-slate-500">This opens WhatsApp with the message ready; tap Send there. If the number is not on WhatsApp or is unknown, come back and tap Cancel. Your sale is already saved either way.</p>
+                <div class="text-[11px] text-slate-500 space-y-1.5 bg-slate-50 border border-slate-200 rounded-xl p-3">
+                    <p><b class="text-slate-700">Share PDF on WhatsApp:</b> attaches the PDF and opens WhatsApp. Pick the customer from your chats.</p>
+                    <p><b class="text-slate-700">Save PDF &amp; open chat:</b> works for any number, even one not saved in your phone. Once the chat opens, tap the paperclip, choose Document and pick the PDF that was just saved.</p>
+                    <p id="waShareNote" class="text-amber-700 font-semibold hidden">This browser cannot share files directly, so use "Save PDF &amp; open chat".</p>
+                    <p>Unknown number or changed your mind? Tap Cancel. The sale is already saved.</p>
+                </div>
             </div>
             <div class="px-5 py-4 border-t border-slate-200 flex flex-col-reverse sm:flex-row sm:justify-end gap-2 sm:gap-3 pb-20 sm:pb-4">
                 <button type="button" onclick="closeWhatsApp()" class="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-center">Cancel - don't send</button>
-                <a id="waSendLink" href="#" target="_blank" rel="noopener" onclick="return onWaSendClick(event)" class="px-5 py-2.5 rounded-xl bg-green-600 hover:bg-green-500 text-white font-bold shadow-md shadow-green-600/20 text-center">Open WhatsApp</a>
+                <a id="waChatLink" href="#" target="_blank" rel="noopener" onclick="return onWaChatClick(event)" class="px-4 py-2.5 rounded-xl bg-white border border-green-600 text-green-700 hover:bg-green-50 font-bold text-center">Save PDF &amp; open chat</a>
+                <button type="button" id="waShareBtn" onclick="shareWaPdf()" class="px-5 py-2.5 rounded-xl bg-green-600 hover:bg-green-500 text-white font-bold shadow-md shadow-green-600/20 text-center disabled:opacity-50">Share PDF on WhatsApp</button>
             </div>
         </div>
     </div>
@@ -1023,7 +1030,7 @@
                     </td>
                     <td class="py-3 px-4 text-center">
                         <div class="flex items-center justify-center gap-1.5">
-                            <button onclick="openWhatsApp('${t.id}')" title="Send invoice on WhatsApp" class="p-1.5 bg-green-50 hover:bg-green-100 text-green-700 rounded-lg border border-green-200 transition-colors"><i data-lucide="message-circle" class="w-4 h-4"></i></button>
+                            <button onclick="openWhatsApp('${t.id}')" title="Send invoice PDF on WhatsApp" class="p-1.5 bg-green-50 hover:bg-green-100 text-green-700 rounded-lg border border-green-200 transition-colors"><i data-lucide="message-circle" class="w-4 h-4"></i></button>
                             <button onclick="viewInvoice('${t.id}')" title="Print Invoice" class="p-1.5 bg-sky-50 hover:bg-sky-100 text-teal-700 rounded-lg border border-sky-200 transition-colors"><i data-lucide="printer" class="w-4 h-4"></i></button>
                             ${admin ? `
                             <button onclick="editTransaction('${t.id}')" title="Edit Transaction" class="p-1.5 bg-amber-50 hover:bg-amber-100 text-amber-700 rounded-lg border border-amber-200 transition-colors"><i data-lucide="edit-3" class="w-4 h-4"></i></button>
@@ -1326,9 +1333,13 @@
 
 
         /* ============================================================
-           WHATSAPP
+           WHATSAPP (invoice sent as a PDF file)
+           The invoice is drawn on a canvas by the browser (so the rupee sign and Hindi / Marathi
+           names render correctly), then packed into a PDF. No external libraries.
         ============================================================ */
-        let waTxn = null;
+        let waTxn = null, waPdf = null, waState = 'idle', waErr = '', waToken = 0;
+        const INVOICE_FONT = 'Inter, "Segoe UI", Roboto, "Noto Sans", "Noto Sans Devanagari", Arial, sans-serif';
+        const MONO_FONT = '"SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace';
 
         function toWaNumber(raw, cc) {
             let d = String(raw || '').replace(/\D/g, '');
@@ -1339,31 +1350,228 @@
             return d.length >= 11 && d.length <= 15 ? d : '';
         }
 
-        function buildWhatsAppMessage(t) {
+        function defaultWaCaption(t) {
+            return `Hello ${t.customerName}, thank you for shopping at ${brand.name}! Your invoice ${t.invoiceNo} (${money(t.total)}) is attached.`;
+        }
+
+        function loadImage(src) {
+            return new Promise(resolve => {
+                const img = new Image();
+                img.onload = () => resolve(img);
+                img.onerror = () => resolve(null);
+                img.src = src;
+            });
+        }
+        async function loadLogo() {
+            return (await loadImage(brand.logo || DEFAULT_LOGO_PATH)) || (await loadImage(generatedLogo()));
+        }
+
+        async function renderInvoiceCanvases(t, withLogo) {
+            try {
+                await document.fonts.ready;
+                await Promise.all(['400', '600', '700', '800'].map(w => document.fonts.load(`${w} 14px Inter`).catch(() => null)));
+            } catch (e) { /* fall back to system fonts */ }
+            const logo = withLogo ? await loadLogo() : null;
             const c = calcTotals(t.items, t.discount, t.gstRate);
             const balance = Math.max(0, t.total - t.amountPaid);
-            return [
-                `*${brand.invoiceName || brand.name}*`,
-                brand.address || null,
-                brand.phone ? `Ph: ${brand.phone}` : null,
-                brand.gstin ? `GSTIN: ${brand.gstin}` : null,
-                '',
-                `*Invoice:* ${t.invoiceNo}`,
-                `*Date:* ${t.dateTime.replace('T', ' ')}`,
-                `*Customer:* ${t.customerName}`,
-                '',
-                '*Items*',
-                ...t.items.map((i, n) => `${n + 1}. ${i.name} x${i.qty} - ${money(i.qty * i.price)}`),
-                '',
-                `Subtotal: ${money(c.subtotal)}`,
-                c.discount > 0 ? `Discount: -${money(c.discount)}` : null,
-                t.gstRate > 0 ? `GST (${t.gstRate}% incl.): ${money(c.gst)}` : null,
-                `*Total: ${money(t.total)}*`,
-                `Paid (${t.paymentMethod}): ${money(t.amountPaid)}`,
-                balance > 0 ? `*Balance due: ${money(balance)}*` : null,
-                '',
-                brand.footer || null
-            ].filter(line => line !== null).join('\n');
+            const S = 2, W = 794, H = 1123, M = 40, BOTTOM = H - 60;
+            const pages = [];
+            let ctx, y;
+            const font = (w, size, mono) => `${w} ${size}px ${mono ? MONO_FONT : INVOICE_FONT}`;
+            const newPage = () => {
+                const cv = document.createElement('canvas');
+                cv.width = W * S; cv.height = H * S;
+                ctx = cv.getContext('2d');
+                ctx.scale(S, S);
+                ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, W, H);
+                ctx.textBaseline = 'top';
+                pages.push(cv); y = M;
+            };
+            const wrap = (txt, maxW) => {
+                const out = [];
+                for (const para of String(txt ?? '').split('\n')) {
+                    let line = '';
+                    for (const word of para.split(' ')) {
+                        const test = line ? line + ' ' + word : word;
+                        if (ctx.measureText(test).width <= maxW) { line = test; continue; }
+                        if (line) out.push(line);
+                        line = word;
+                        while (ctx.measureText(line).width > maxW && line.length > 1) {
+                            let n = line.length - 1;
+                            while (n > 1 && ctx.measureText(line.slice(0, n)).width > maxW) n--;
+                            out.push(line.slice(0, n)); line = line.slice(n);
+                        }
+                    }
+                    out.push(line);
+                }
+                return out;
+            };
+            const text = (str, x, yy, o = {}) => {
+                ctx.font = o.f || font(400, 12); ctx.fillStyle = o.color || '#0f172a'; ctx.textAlign = o.align || 'left';
+                ctx.fillText(str, x, yy);
+            };
+            const box = (x, yy, w, h, fill, stroke) => {
+                const r = 8;
+                ctx.beginPath();
+                ctx.moveTo(x + r, yy); ctx.arcTo(x + w, yy, x + w, yy + h, r); ctx.arcTo(x + w, yy + h, x, yy + h, r);
+                ctx.arcTo(x, yy + h, x, yy, r); ctx.arcTo(x, yy, x + w, yy, r); ctx.closePath();
+                if (fill) { ctx.fillStyle = fill; ctx.fill(); }
+                if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = 1; ctx.stroke(); }
+            };
+
+            newPage();
+            /* header */
+            let hx = M;
+            if (logo) {
+                const side = 56, r = Math.min(side / logo.width, side / logo.height);
+                const w = logo.width * r, h = logo.height * r;
+                ctx.drawImage(logo, M + (side - w) / 2, y + (side - h) / 2, w, h);
+                hx = M + side + 14;
+            }
+            let ly = y;
+            text(brand.invoiceName || brand.name, hx, ly, { f: font(800, 22) }); ly += 29;
+            if (brand.invoiceTagline) { text(brand.invoiceTagline, hx, ly, { f: font(600, 12), color: '#334155' }); ly += 17; }
+            const contact = [brand.address, brand.phone && ('Ph: ' + brand.phone), brand.email, brand.website].filter(Boolean).join(' | ');
+            ctx.font = font(400, 11);
+            for (const l of wrap(contact, 410)) { text(l, hx, ly, { f: font(400, 11), color: '#475569' }); ly += 15; }
+            if (brand.gstin) { text('GSTIN: ' + brand.gstin, hx, ly, { f: font(600, 11), color: '#475569' }); ly += 15; }
+            text(t.invoiceNo, W - M, y, { f: font(700, 17, true), align: 'right' });
+            text(t.dateTime.replace('T', ' '), W - M, y + 25, { f: font(400, 12), color: '#475569', align: 'right' });
+            text('STATUS: ' + String(t.paymentStatus).toUpperCase(), W - M, y + 45, { f: font(700, 11), align: 'right' });
+            y = Math.max(ly, y + 66) + 10;
+            ctx.fillStyle = '#0f172a'; ctx.fillRect(M, y, W - 2 * M, 2); y += 18;
+
+            /* customer + payment panel */
+            ctx.font = font(700, 14);
+            const nameLines = wrap(t.customerName, 330);
+            ctx.font = font(400, 12);
+            const refLines = t.txnRef ? wrap('Ref: ' + t.txnRef, 300) : [];
+            const leftH = 22 + nameLines.length * 18 + 18, rightH = 22 + 17 + refLines.length * 16;
+            const panelH = Math.max(leftH, rightH) + 14;
+            box(M, y, W - 2 * M, panelH, '#f1f5f9', '#cbd5e1');
+            text('CUSTOMER DETAILS', M + 14, y + 12, { f: font(700, 9), color: '#64748b' });
+            nameLines.forEach((l, i) => text(l, M + 14, y + 26 + i * 18, { f: font(700, 14) }));
+            text(String(t.customerPhone), M + 14, y + 26 + nameLines.length * 18, { f: font(400, 12, true), color: '#475569' });
+            text('PAYMENT DETAILS', W - M - 14, y + 12, { f: font(700, 9), color: '#64748b', align: 'right' });
+            text('Method: ' + t.paymentMethod, W - M - 14, y + 26, { f: font(700, 12), align: 'right' });
+            refLines.forEach((l, i) => text(l, W - M - 14, y + 43 + i * 16, { f: font(400, 12), color: '#475569', align: 'right' }));
+            y += panelH + 18;
+
+            /* items table */
+            const itemX = M + 10, itemW = 420, qtyC = W - M - 250, priceR = W - M - 110, amtR = W - M - 10;
+            const tableHead = () => {
+                ctx.fillStyle = '#e2e8f0'; ctx.fillRect(M, y, W - 2 * M, 28);
+                text('Item Description', itemX, y + 8, { f: font(700, 11) });
+                text('Qty', qtyC, y + 8, { f: font(700, 11), align: 'center' });
+                text('Price', priceR, y + 8, { f: font(700, 11), align: 'right' });
+                text('Amount', amtR, y + 8, { f: font(700, 11), align: 'right' });
+                y += 28;
+            };
+            tableHead();
+            for (const it of t.items) {
+                ctx.font = font(500, 12);
+                const lines = wrap(it.name, itemW);
+                const rowH = Math.max(32, lines.length * 16 + 16);
+                if (y + rowH > BOTTOM) { newPage(); tableHead(); }
+                lines.forEach((l, i) => text(l, itemX, y + 8 + i * 16, { f: font(500, 12) }));
+                text(String(it.qty), qtyC, y + 8, { align: 'center' });
+                text(money(it.price), priceR, y + 8, { align: 'right' });
+                text(money(it.qty * it.price), amtR, y + 8, { f: font(700, 12), align: 'right' });
+                ctx.fillStyle = '#e2e8f0'; ctx.fillRect(M, y + rowH - 1, W - 2 * M, 1);
+                y += rowH;
+            }
+            y += 18;
+
+            /* totals */
+            const rows = [['Subtotal', money(c.subtotal), 400]];
+            if (c.discount > 0) rows.push(['Discount', '-' + money(c.discount), 400]);
+            if (t.gstRate > 0) { rows.push(['Taxable value', money(c.taxable), 400]); rows.push([`GST (${t.gstRate}% incl.)`, money(c.gst), 400]); }
+            rows.push(['TOTAL', money(t.total), 800]);
+            rows.push(['Amount Paid', money(t.amountPaid), 400]);
+            if (balance > 0) rows.push(['Balance Due', money(balance), 700]);
+            const boxW = 270, boxH = rows.length * 22 + 20;
+            if (y + boxH + 70 > BOTTOM) newPage();
+            const bx = W - M - boxW;
+            box(bx, y, boxW, boxH, '#f8fafc', '#cbd5e1');
+            rows.forEach(([label, val, weight], i) => {
+                const ry = y + 12 + i * 22;
+                const big = label === 'TOTAL';
+                if (big) { ctx.fillStyle = '#94a3b8'; ctx.fillRect(bx + 12, ry - 4, boxW - 24, 1); }
+                text(label, bx + 14, ry + (big ? 2 : 0), { f: font(big ? 800 : weight, big ? 14 : 12), color: big ? '#000000' : '#334155' });
+                text(val, bx + boxW - 14, ry + (big ? 2 : 0), { f: font(big ? 800 : weight, big ? 14 : 12), color: big ? '#000000' : '#0f172a', align: 'right' });
+            });
+            y += boxH + 26;
+
+            /* footer */
+            ctx.fillStyle = '#cbd5e1'; ctx.fillRect(M, y, W - 2 * M, 1); y += 12;
+            ctx.font = font(700, 11);
+            for (const l of wrap(brand.footer || '', W - 2 * M)) { if (l) { text(l, W / 2, y, { f: font(700, 11), align: 'center' }); y += 16; } }
+            ctx.font = font(400, 10);
+            for (const l of wrap(brand.footerSub || '', W - 2 * M)) { if (l) { text(l, W / 2, y, { f: font(400, 10), color: '#64748b', align: 'center' }); y += 14; } }
+
+            if (pages.length > 1) {
+                pages.forEach((cv, i) => {
+                    ctx = cv.getContext('2d');
+                    text(`Page ${i + 1} of ${pages.length}`, W - M, H - 36, { f: font(400, 10), color: '#94a3b8', align: 'right' });
+                });
+            }
+            return pages;
+        }
+
+        /** Packs canvases (one per A4 page) into a PDF file. */
+        async function canvasesToPdf(pages) {
+            const jpegs = [];
+            for (const cv of pages) {
+                const blob = await new Promise((res, rej) => cv.toBlob(b => b ? res(b) : rej(new Error('Could not encode the invoice image')), 'image/jpeg', 0.92));
+                jpegs.push({ bytes: new Uint8Array(await blob.arrayBuffer()), w: cv.width, h: cv.height });
+            }
+            const enc = new TextEncoder(), chunks = [], offsets = [];
+            let len = 0;
+            const push = b => { const u = typeof b === 'string' ? enc.encode(b) : b; chunks.push(u); len += u.length; };
+            const obj = (n, fn) => { offsets[n] = len; push(`${n} 0 obj\n`); fn(); push('\nendobj\n'); };
+            const PW = 595.28, PH = 841.89, n = jpegs.length;
+            push('%PDF-1.4\n');
+            obj(1, () => push('<</Type/Catalog/Pages 2 0 R>>'));
+            obj(2, () => push(`<</Type/Pages/Count ${n}/Kids[${jpegs.map((_, i) => `${3 + i * 3} 0 R`).join(' ')}]>>`));
+            jpegs.forEach((j, i) => {
+                const p = 3 + i * 3, content = `q ${PW} 0 0 ${PH} 0 0 cm /Im0 Do Q`;
+                obj(p, () => push(`<</Type/Page/Parent 2 0 R/MediaBox[0 0 ${PW} ${PH}]/Resources<</XObject<</Im0 ${p + 2} 0 R>>>>/Contents ${p + 1} 0 R>>`));
+                obj(p + 1, () => push(`<</Length ${content.length}>>\nstream\n${content}\nendstream`));
+                obj(p + 2, () => {
+                    push(`<</Type/XObject/Subtype/Image/Width ${j.w}/Height ${j.h}/ColorSpace/DeviceRGB/BitsPerComponent 8/Filter/DCTDecode/Length ${j.bytes.length}>>\nstream\n`);
+                    push(j.bytes); push('\nendstream');
+                });
+            });
+            const total = 3 + n * 3, xref = len;
+            push(`xref\n0 ${total}\n0000000000 65535 f \n`);
+            for (let k = 1; k < total; k++) push(String(offsets[k]).padStart(10, '0') + ' 00000 n \n');
+            push(`trailer\n<</Size ${total}/Root 1 0 R>>\nstartxref\n${xref}\n%%EOF`);
+            return new Blob(chunks, { type: 'application/pdf' });
+        }
+
+        async function makeInvoicePdf(t) {
+            try { return await canvasesToPdf(await renderInvoiceCanvases(t, true)); }
+            catch (e) { return await canvasesToPdf(await renderInvoiceCanvases(t, false)); } // e.g. a logo the browser will not export
+        }
+
+        async function prepareWaPdf() {
+            const t = waTxn;
+            if (!t) return;
+            const token = ++waToken;
+            waPdf = null; waState = 'loading'; waErr = '';
+            updateWaUi();
+            try {
+                const blob = await makeInvoicePdf(t);
+                if (token !== waToken) return;
+                const name = `Invoice-${String(t.invoiceNo).replace(/[^A-Za-z0-9_-]/g, '_')}.pdf`;
+                waPdf = { blob, name, file: typeof File === 'function' ? new File([blob], name, { type: 'application/pdf' }) : null };
+                waState = 'ready';
+            } catch (e) {
+                if (token !== waToken) return;
+                console.error(e);
+                waState = 'error'; waErr = (e && e.message) || 'Unknown error';
+            }
+            updateWaUi();
         }
 
         function openWhatsApp(ref) {
@@ -1374,40 +1582,76 @@
             try { cc = localStorage.getItem('triayam_cc') || '91'; } catch (e) { /* ignore */ }
             document.getElementById('waCC').value = cc;
             document.getElementById('waPhone').value = t.customerPhone || '';
-            document.getElementById('waMsg').value = buildWhatsAppMessage(t);
+            document.getElementById('waCaption').value = defaultWaCaption(t);
             document.getElementById('waSub').textContent = `${t.invoiceNo} • ${t.customerName} • ${money(t.total)}`;
-            updateWaLink();
             showModal('waModal');
             icons();
+            prepareWaPdf();
         }
 
-        function updateWaLink() {
-            const link = document.getElementById('waSendLink');
-            const hint = document.getElementById('waHint');
+        function updateWaUi() {
+            const ready = waState === 'ready' && waPdf;
+            const status = document.getElementById('waStatus');
+            if (waState === 'loading') {
+                status.className = 'flex items-center justify-between gap-2 text-xs rounded-lg border px-3 py-2 bg-sky-50 border-sky-200 text-sky-800';
+                status.textContent = 'Preparing the invoice PDF...';
+            } else if (ready) {
+                status.className = 'flex items-center justify-between gap-2 text-xs rounded-lg border px-3 py-2 bg-green-50 border-green-200 text-green-800';
+                status.textContent = `PDF ready: ${waPdf.name} (${Math.max(1, Math.round(waPdf.blob.size / 1024))} KB)`;
+            } else if (waState === 'error') {
+                status.className = 'flex items-center justify-between gap-2 text-xs rounded-lg border px-3 py-2 bg-rose-50 border-rose-200 text-rose-700';
+                status.innerHTML = '<span></span><button type="button" onclick="prepareWaPdf()" class="font-bold underline shrink-0">Try again</button>';
+                status.firstChild.textContent = `Could not create the PDF (${waErr}).`;
+            }
+
             const num = toWaNumber(document.getElementById('waPhone').value, document.getElementById('waCC').value);
-            const msg = document.getElementById('waMsg').value;
-            if (num) {
-                link.href = `https://wa.me/${num}?text=${encodeURIComponent(msg)}`;
-                link.classList.remove('opacity-50', 'pointer-events-none');
-                hint.className = 'text-[11px] mt-1.5 text-green-700';
-                hint.textContent = `Will open a WhatsApp chat with +${num}`;
-            } else {
-                link.href = '#';
-                link.classList.add('opacity-50', 'pointer-events-none');
-                hint.className = 'text-[11px] mt-1.5 text-rose-600 font-semibold';
-                hint.textContent = 'Enter a valid mobile number, or tap Cancel to skip.';
+            const hint = document.getElementById('waHint');
+            if (num) { hint.className = 'text-[11px] mt-1.5 text-green-700'; hint.textContent = `Chat will open with +${num}`; }
+            else { hint.className = 'text-[11px] mt-1.5 text-rose-600 font-semibold'; hint.textContent = 'Not a valid number. You can still use Share PDF, or tap Cancel.'; }
+
+            const caption = document.getElementById('waCaption').value;
+            const chat = document.getElementById('waChatLink');
+            const chatOk = ready && !!num;
+            chat.href = num ? `https://wa.me/${num}?text=${encodeURIComponent(caption)}` : '#';
+            chat.classList.toggle('opacity-50', !chatOk);
+            chat.classList.toggle('pointer-events-none', !chatOk);
+
+            const shareApi = !!(navigator.share && navigator.canShare);
+            const canShare = !!(ready && shareApi && waPdf.file && navigator.canShare({ files: [waPdf.file] }));
+            const shareBtn = document.getElementById('waShareBtn');
+            shareBtn.classList.toggle('hidden', !shareApi || (ready && !canShare));
+            shareBtn.disabled = !canShare;
+            document.getElementById('waShareNote').classList.toggle('hidden', !(ready && !canShare));
+        }
+
+        async function shareWaPdf() {
+            if (!waPdf || !waPdf.file) return;
+            try {
+                await navigator.share({ files: [waPdf.file], title: waPdf.name, text: document.getElementById('waCaption').value });
+                closeWhatsApp();
+            } catch (e) {
+                if (e && e.name === 'AbortError') return; // the person closed the share sheet
+                showToast('Could not open the share sheet. Use "Save PDF & open chat" instead.', 'error');
             }
         }
 
-        function onWaSendClick(e) {
+        function onWaChatClick(e) {
             const num = toWaNumber(document.getElementById('waPhone').value, document.getElementById('waCC').value);
-            if (!num) { e.preventDefault(); return false; }
+            if (!(waState === 'ready' && waPdf) || !num) { e.preventDefault(); return false; }
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(waPdf.blob); a.download = waPdf.name;
+            document.body.appendChild(a); a.click(); a.remove();
+            setTimeout(() => URL.revokeObjectURL(a.href), 20000);
             try { localStorage.setItem('triayam_cc', document.getElementById('waCC').value.replace(/\D/g, '') || '91'); } catch (err) { /* ignore */ }
-            setTimeout(() => closeModal('waModal'), 400);
-            return true;
+            setTimeout(closeWhatsApp, 600);
+            return true; // let the link open the WhatsApp chat
         }
 
-        function closeWhatsApp() { waTxn = null; closeModal('waModal'); }
+        function closeWhatsApp() {
+            waToken++; waTxn = null; waPdf = null; waState = 'idle';
+            document.getElementById('waStatus').textContent = '';
+            closeModal('waModal');
+        }
 
         /* ============================================================
            EXCEL EXPORT
