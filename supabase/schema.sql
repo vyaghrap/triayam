@@ -1,6 +1,7 @@
 -- TriAyam Stall Tracker - database schema
 -- Paste this whole file into Supabase > SQL Editor > New query, then click RUN.
 -- It is safe to run more than once.
+-- (Includes the stall locations tables. Existing installs can run just supabase/add-stalls.sql instead.)
 
 -- ---------- tables ----------
 create table if not exists app_meta (
@@ -47,6 +48,13 @@ create table if not exists catalog (
   created_at timestamptz not null default now()
 );
 
+create table if not exists stalls (
+  id         uuid primary key default gen_random_uuid(),
+  name       text not null unique,
+  active     boolean not null default true,
+  created_at timestamptz not null default now()
+);
+
 create table if not exists transactions (
   id             uuid primary key default gen_random_uuid(),
   invoice_no     text not null unique,
@@ -64,9 +72,13 @@ create table if not exists transactions (
   payment_method text not null default 'UPI',
   payment_status text not null default 'Paid',
   txn_ref        text not null default '',
+  stall_id       uuid references stalls (id) on delete restrict,   -- null = Direct Sale
   created_at     timestamptz not null default now()
 );
+-- for databases created before stalls existed
+alter table transactions add column if not exists stall_id uuid references stalls (id) on delete restrict;
 create index if not exists transactions_date_idx on transactions (date_time desc);
+create index if not exists transactions_stall_idx on transactions (stall_id);
 
 -- ---------- change counter ----------
 create or replace function bump_rev() returns trigger
@@ -82,6 +94,8 @@ drop trigger if exists t_rev on brand;
 create trigger t_rev after insert or update or delete on brand        for each statement execute function bump_rev();
 drop trigger if exists t_rev on catalog;
 create trigger t_rev after insert or update or delete on catalog      for each statement execute function bump_rev();
+drop trigger if exists t_rev on stalls;
+create trigger t_rev after insert or update or delete on stalls       for each statement execute function bump_rev();
 drop trigger if exists t_rev on transactions;
 create trigger t_rev after insert or update or delete on transactions for each statement execute function bump_rev();
 
@@ -106,7 +120,15 @@ alter table app_users       enable row level security;
 alter table sessions        enable row level security;
 alter table login_attempts  enable row level security;
 alter table catalog         enable row level security;
+alter table stalls          enable row level security;
 alter table transactions    enable row level security;
 
-revoke all on app_meta, brand, app_users, sessions, login_attempts, catalog, transactions from anon, authenticated;
+revoke all on app_meta, brand, app_users, sessions, login_attempts, catalog, stalls, transactions from anon, authenticated;
 revoke execute on function next_counter(), bump_counter(bigint), bump_rev() from public, anon, authenticated;
+
+-- ---------- let the server key use the tables ----------
+-- Newer Supabase projects do not expose new tables automatically, so grant the
+-- server-side role (service_role) access explicitly. The public keys stay locked out.
+grant usage on schema public to service_role;
+grant all on app_meta, brand, app_users, sessions, login_attempts, catalog, stalls, transactions to service_role;
+grant execute on function next_counter(), bump_counter(bigint) to service_role;
