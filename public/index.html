@@ -895,18 +895,28 @@
            STALL VIEWS (Total dashboard / Direct sales / one stall)
         ============================================================ */
         const stallName = id => { const s = stalls.find(x => x.id === id); return s ? s.name : 'Unknown stall'; };
-        const locationName = t => t.stallId ? stallName(t.stallId) : 'Direct Sale';
+        // A sale keeps its location even after the stall is deleted: the server saves the stall's name on the sale.
+        // Keys: a stall id, 'R:<name>' (stall since removed) or 'DIRECT'.
+        const txnKey = t => t.stallId || (t.stallName ? 'R:' + t.stallName : 'DIRECT');
+        const locationName = t => t.stallId ? stallName(t.stallId) : (t.stallName ? t.stallName + ' (removed)' : 'Direct Sale');
+        const removedKeys = () => [...new Set(transactions.map(txnKey).filter(k => k.startsWith('R:')))].sort();
+        function viewLabel(v) {
+            if (v === 'TOTAL') return 'All Locations';
+            if (v === 'DIRECT') return 'Direct Sales';
+            if (v.startsWith('R:')) return v.slice(2) + ' (removed)';
+            return stallName(v);
+        }
 
         /** The sales that belong to the view that is open right now. */
         function viewTxns() {
             if (currentView === 'TOTAL') return transactions;
-            if (currentView === 'DIRECT') return transactions.filter(t => !t.stallId);
-            return transactions.filter(t => t.stallId === currentView);
+            return transactions.filter(t => txnKey(t) === currentView);
         }
 
         function viewIsValid(v) {
             if (v === 'TOTAL') return isAdminLevel();
             if (v === 'DIRECT') return true;
+            if (v.startsWith('R:')) return transactions.some(t => txnKey(t) === v);
             return stalls.some(s => s.id === v);
         }
 
@@ -917,6 +927,7 @@
             if (isAdminLevel()) opts.push(['TOTAL', 'All Locations - Total Dashboard']);
             opts.push(['DIRECT', 'Direct Sales']);
             stalls.forEach(s => opts.push([s.id, s.name + (s.active ? '' : ' (inactive)')]));
+            removedKeys().forEach(k => opts.push([k, viewLabel(k)]));
             const sel = document.getElementById('viewSelect');
             sel.innerHTML = opts.map(([v, label]) => `<option value="${escapeHtml(v)}">${escapeHtml(label)}</option>`).join('');
             sel.value = currentView;
@@ -927,6 +938,7 @@
             let title, sub;
             if (currentView === 'TOTAL') { title = 'Total Sales Dashboard'; sub = 'Direct sales and every stall combined'; }
             else if (currentView === 'DIRECT') { title = 'Direct Sales'; sub = 'Sales not made at a stall'; }
+            else if (currentView.startsWith('R:')) { title = viewLabel(currentView); sub = 'This stall was deleted; its sales keep this location'; }
             else { title = stallName(currentView); sub = 'Sales recorded at this stall only'; }
             document.getElementById('viewTitle').textContent = title;
             document.getElementById('viewSub').textContent = sub;
@@ -949,9 +961,10 @@
             if (!body) return;
             const groups = [{ id: 'DIRECT', name: 'Direct Sales', inactive: false, count: 0, billed: 0, collected: 0 }];
             stalls.forEach(s => groups.push({ id: s.id, name: s.name, inactive: !s.active, count: 0, billed: 0, collected: 0 }));
+            removedKeys().forEach(k => groups.push({ id: k, name: viewLabel(k), inactive: false, count: 0, billed: 0, collected: 0 }));
             const byId = Object.fromEntries(groups.map(g => [g.id, g]));
             transactions.forEach(t => {
-                const g = byId[t.stallId || 'DIRECT'] || byId.DIRECT;
+                const g = byId[txnKey(t)] || byId.DIRECT;
                 g.count++; g.billed += t.total; g.collected += t.amountPaid;
             });
             const sum = groups.reduce((a, g) => ({ count: a.count + g.count, billed: a.billed + g.billed, collected: a.collected + g.collected }), { count: 0, billed: 0, collected: 0 });
@@ -1009,7 +1022,12 @@
                 showToast("Stall added!");
                 await refresh(true);
                 if (d && d.stall) changeView(d.stall.id);
-            } catch (err) { reportError(err); }
+            } catch (err) {
+                if (err && err.status === 404 && err.message === 'Not found') {
+                    return showToast('The server has not been updated yet. Upload the new api.mjs to netlify/functions, wait for the Netlify deploy to finish, then try again.', 'error');
+                }
+                reportError(err);
+            }
         }
 
         async function renameStall(id) {
@@ -1030,7 +1048,7 @@
 
         async function deleteStall(id) {
             const s = stalls.find(x => x.id === id);
-            if (!s || !confirm(`Delete stall "${s.name}"? This only works if it has no sales; otherwise use Deactivate.`)) return;
+            if (!s || !confirm(`Delete stall "${s.name}"? Its existing sales keep "${s.name}" as their location (shown as removed). To stop using a stall but keep it listed, use Deactivate instead.`)) return;
             try { await api('DELETE', '/api/stalls/' + id); showToast("Stall deleted."); await refresh(true); }
             catch (e) { reportError(e); }
         }
@@ -1038,12 +1056,11 @@
         /** Fill the Sale Location dropdown in the sale form. */
         function fillStallSelect(selected) {
             const sel = document.getElementById('formStall');
-            const opts = [];
-            if (!selected) opts.push(['', '- Select location -']);
-            opts.push(['DIRECT', 'Direct Sale (no stall)']);
+            const opts = [['DIRECT', 'Direct Sale (no stall)']];
             stalls.forEach(s => { if (s.active || s.id === selected) opts.push([s.id, s.name + (s.active ? '' : ' (inactive)')]); });
+            if (selected && selected.startsWith('R:')) opts.push([selected, viewLabel(selected)]); // keeps the location of an older sale
             sel.innerHTML = opts.map(([v, label]) => `<option value="${escapeHtml(v)}">${escapeHtml(label)}</option>`).join('');
-            sel.value = selected || '';
+            sel.value = selected || 'DIRECT';
         }
 
         /* ============================================================
@@ -1169,7 +1186,10 @@
 
         function hideToast() {
             clearTimeout(toastTimer);
-            document.getElementById('toast').classList.add('-translate-y-24', 'opacity-0', 'pointer-events-none');
+            const el = document.getElementById('toast');
+            // showToast adds translate-y-0 / opacity-100; they must be removed or they override the hiding classes
+            el.classList.remove('translate-y-0', 'opacity-100');
+            el.classList.add('-translate-y-24', 'opacity-0', 'pointer-events-none');
         }
 
         /* ============================================================
@@ -1182,6 +1202,7 @@
             t.discount = Number(t.discount) || 0;
             t.amountPaid = Number(t.amountPaid) || 0;
             t.stallId = t.stallId || null;
+            t.stallName = t.stallName || '';
             if (t.gstRate === undefined) t.gstRate = 18;
             return t;
         }
@@ -1315,9 +1336,11 @@
             document.getElementById('formDateTime').value =
                 new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
             document.getElementById('formExecutive').value = currentUser.name;
-            // Pre-select the location being viewed; on the Total dashboard the person must choose.
-            const activeStall = stalls.find(s => s.id === currentView && s.active);
-            fillStallSelect(currentView === 'DIRECT' ? 'DIRECT' : (activeStall ? activeStall.id : ''));
+            // Default location: the stall being viewed; Direct Sales if that view is open; otherwise the first
+            // active stall, or Direct Sale when no stall exists yet.
+            const viewedStall = stalls.find(s => s.id === currentView && s.active);
+            const firstActive = stalls.find(s => s.active);
+            fillStallSelect(viewedStall ? viewedStall.id : (currentView === 'DIRECT' ? 'DIRECT' : (firstActive ? firstActive.id : 'DIRECT')));
             document.getElementById('formCustName').value = '';
             document.getElementById('formCustPhone').value = '';
             document.getElementById('formDiscount').value = 0;
@@ -1419,8 +1442,7 @@
             if (items.length === 0) return showToast("Please add at least one product item.", "error");
             const phone = document.getElementById('formCustPhone').value.trim();
             if (!/^\d{10}$/.test(phone)) return showToast("Enter a valid 10-digit mobile number.", "error");
-            const location = document.getElementById('formStall').value;
-            if (!location) return showToast("Choose the sale location (a stall or Direct Sale).", "error");
+            const location = document.getElementById('formStall').value || 'DIRECT';
             const status = document.getElementById('formPayStatus').value;
             const t = calculateFormTotals();
             if (status === 'Partial' && (t.paid <= 0 || t.paid >= t.total)) {
@@ -1431,7 +1453,8 @@
                 dateTime: document.getElementById('formDateTime').value,
                 customerName: document.getElementById('formCustName').value.trim(),
                 customerPhone: phone,
-                stallId: location === 'DIRECT' ? null : location,
+                stallId: (location === 'DIRECT' || location.startsWith('R:')) ? null : location,
+                stallName: location.startsWith('R:') ? location.slice(2) : '',
                 items, discount: t.discount, amountPaid: t.paid,
                 paymentMethod: document.getElementById('formPayMethod').value,
                 paymentStatus: status,
@@ -1471,7 +1494,7 @@
             document.getElementById('formInvoiceNo').value = t.invoiceNo;
             document.getElementById('formDateTime').value = t.dateTime;
             document.getElementById('formExecutive').value = t.executive;
-            fillStallSelect(t.stallId || 'DIRECT');
+            fillStallSelect(txnKey(t));
             document.getElementById('formCustName').value = t.customerName;
             document.getElementById('formCustPhone').value = t.customerPhone;
             document.getElementById('formDiscount').value = t.discount;
@@ -1950,7 +1973,7 @@
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, "Stall Sales");
             const safeName = (brand.name || 'Stall').replace(/[^a-z0-9]+/gi, '_');
-            const scope = currentView === 'TOTAL' ? 'All' : (currentView === 'DIRECT' ? 'Direct' : stallName(currentView).replace(/[^a-z0-9]+/gi, '_'));
+            const scope = viewLabel(currentView).replace(/[^a-z0-9]+/gi, '_');
             XLSX.writeFile(wb, `${safeName}_${scope}_Report_${new Date().toISOString().slice(0, 10)}.xlsx`);
             showToast("Excel sales report downloaded!");
         }
