@@ -277,7 +277,17 @@ async function route(req, context) {
     await Promise.all([checkRate(rk), ensureSeed()]);
     const rows = await sb('GET', `/app_users?email=eq.${enc(email)}&select=*&limit=1`);
     const user = rows[0];
-    const ok = await verifyPw(String(b.password ?? ''), user ? user.password_hash : await getDummyHash());
+    let ok = await verifyPw(String(b.password ?? ''), user ? user.password_hash : await getDummyHash());
+    // Recovery: if RESET_SUPERADMIN_PASSWORD is set in Netlify, signing in as ADMIN_EMAIL with that value
+    // sets it as the Super Admin's password. Remove the variable again once you are back in.
+    const resetPw = process.env.RESET_SUPERADMIN_PASSWORD || '';
+    if (user && !ok && resetPw.length >= 6 && user.role === 'SuperAdmin' && email === (process.env.ADMIN_EMAIL || '').trim().toLowerCase()
+        && crypto.timingSafeEqual(Buffer.from(sha(String(b.password ?? ''))), Buffer.from(sha(resetPw)))) {
+      await sb('PATCH', `/app_users?id=eq.${user.id}`, { body: { password_hash: await hashPw(resetPw), active: true }, prefer: 'return=minimal' });
+      await purgeSessions(user.id);
+      user.active = true;
+      ok = true;
+    }
     if (!user || !ok) { await noteFail(rk); throw httpErr(401, 'Invalid credentials provided.'); }
     if (user.active === false) throw httpErr(403, 'This account has been deactivated.');
     const token = crypto.randomBytes(32).toString('hex');
