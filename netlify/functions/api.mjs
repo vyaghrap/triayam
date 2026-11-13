@@ -12,7 +12,7 @@ const DEFAULT_BRAND = {
   name: 'TriAyam', accent: 'Ayam', badge: 'Stall POS', tagline: '3D Printing Studio & Services',
   invoiceName: 'TriAyam Studio', invoiceTagline: '3D Printing Studio & Prototyping Services',
   address: 'Talegaon Station, Pune, Maharashtra', phone: '', email: '', website: 'triayam.in',
-  gstin: '', gstRate: 18, prefix: 'TA',
+  gstin: '', gstRate: 18, gstEnabled: true, prefix: 'TA',
   footer: 'Thank you for visiting the TriAyam Stall!',
   footerSub: 'Visit triayam.in for custom 3D design & batch manufacturing', logo: ''
 };
@@ -163,6 +163,13 @@ function buildTxn(input, base, gstRateForNew) {
   // A sale whose stall was deleted keeps the stall's name; it can only be carried over, never invented.
   const stallName = (!stallId && base && base.stallName && str(input.stallName, 60) === base.stallName) ? base.stallName : '';
 
+  // GST: 0 means no GST on this sale. The client sends gstEnabled; imports and old callers keep the stored/legacy rate.
+  let gstRate;
+  if (input.gstEnabled === false) gstRate = 0;
+  else if (base && input.gstEnabled !== true) gstRate = base.gstRate;
+  else if (base && base.gstRate > 0) gstRate = base.gstRate;
+  else gstRate = gstRateForNew;
+
   const subtotal = round2(items.reduce((a, i) => a + i.qty * i.price, 0));
   const discount = round2(Math.min(Math.max(Number(input.discount) || 0, 0), subtotal));
   const total = round2(subtotal - discount);
@@ -174,7 +181,7 @@ function buildTxn(input, base, gstRateForNew) {
   }
   return {
     customerName, customerPhone: phone, dateTime, items, subtotal, discount, total, amountPaid,
-    gstRate: base ? base.gstRate : gstRateForNew, paymentMethod, paymentStatus, txnRef: str(input.txnRef, 120), stallId, stallName
+    gstRate, paymentMethod, paymentStatus, txnRef: str(input.txnRef, 120), stallId, stallName
   };
 }
 
@@ -338,7 +345,7 @@ async function route(req, context) {
       name: str(b.name, 40), accent: str(b.accent, 40), badge: str(b.badge, 20), tagline: str(b.tagline, 80),
       invoiceName: str(b.invoiceName, 60), invoiceTagline: str(b.invoiceTagline, 80), address: str(b.address, 200),
       phone: str(b.phone, 30), email: str(b.email, 80), website: str(b.website, 80),
-      gstin: str(b.gstin, 20).toUpperCase(), gstRate: round2(num(b.gstRate, 0, 100, 0)),
+      gstin: str(b.gstin, 20).toUpperCase(), gstRate: round2(num(b.gstRate, 0, 100, 0)), gstEnabled: b.gstEnabled !== false,
       prefix: str(b.prefix, 6).toUpperCase().replace(/[^A-Z0-9]/g, '') || 'INV',
       footer: str(b.footer, 120), footerSub: str(b.footerSub, 160)
     };
@@ -425,7 +432,7 @@ async function route(req, context) {
   if (method === 'POST' && p === '/api/transactions') {
     const b = await readBody(req);
     const brand = await prefetch;
-    const data = buildTxn(b, null, brand.gstRate);
+    const data = buildTxn(b, null, brand.gstEnabled === false ? 0 : brand.gstRate);
     await checkStall(data.stallId, null);
     for (let attempt = 0; attempt < 4; attempt++) {
       const seq = await sb('POST', '/rpc/next_counter', { body: {} });
@@ -452,7 +459,8 @@ async function route(req, context) {
       if (b.version !== undefined && Number(b.version) !== cur.version) {
         throw httpErr(409, 'This record was changed on another device. The latest data has been loaded - please re-apply your edit.');
       }
-      const data = buildTxn(b, cur);
+      const brandNow = await getBrand();
+      const data = buildTxn(b, cur, brandNow.gstEnabled === false ? 0 : brandNow.gstRate);
       await checkStall(data.stallId, cur.stallId);
       const rows = await sb('PATCH', `/transactions?id=eq.${cur.id}&version=eq.${cur.version}`, {
         body: { ...txToRow(data), version: cur.version + 1 }, prefer: 'return=representation'
