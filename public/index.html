@@ -31,7 +31,7 @@
                 width: 100% !important; margin: 0 !important; padding: 10px !important; display: block !important;
             }
             .no-print, header, #loginOverlay, #toast, #invoiceModal, #transactionModal,
-            #userManagementModal, #catalogModal, #brandModal { display: none !important; }
+            #userManagementModal, #catalogModal, #brandModal, #stallModal { display: none !important; }
         }
     </style>
 </head>
@@ -95,6 +95,9 @@
                 <button id="brandSettingsBtn" onclick="openBrandModal()" class="bg-violet-50 hover:bg-violet-100 text-violet-800 px-3 py-2 rounded-lg font-semibold transition-all flex items-center gap-1.5 border border-violet-200 shadow-sm">
                     <i data-lucide="palette" class="w-4 h-4 text-violet-600"></i> Brand Settings
                 </button>
+                <button id="adminStallsBtn" onclick="openStallModal()" class="bg-sky-50 hover:bg-sky-100 text-sky-800 px-3 py-2 rounded-lg font-semibold transition-all flex items-center gap-1.5 border border-sky-200 shadow-sm">
+                    <i data-lucide="map-pin" class="w-4 h-4 text-sky-600"></i> Manage Stalls
+                </button>
                 <button id="adminUsersBtn" onclick="openUserManagementModal()" class="bg-sky-50 hover:bg-sky-100 text-sky-800 px-3 py-2 rounded-lg font-semibold transition-all flex items-center gap-1.5 border border-sky-200 shadow-sm">
                     <i data-lucide="users" class="w-4 h-4 text-sky-600"></i> Manage Users
                 </button>
@@ -127,6 +130,21 @@
 
     <!-- Main -->
     <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
+
+        <!-- View switcher: Total dashboard / Direct sales / one stall -->
+        <div class="bg-white rounded-2xl p-4 border border-sky-200/80 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
+            <div class="flex items-center gap-2">
+                <i data-lucide="map-pin" class="w-5 h-5 text-teal-600"></i>
+                <div>
+                    <h2 id="viewTitle" class="text-base font-bold text-slate-800">Sales</h2>
+                    <p id="viewSub" class="text-xs text-slate-500"></p>
+                </div>
+            </div>
+            <div class="flex items-center gap-2 w-full md:w-80">
+                <span class="text-xs font-semibold text-slate-600 shrink-0">Viewing:</span>
+                <select id="viewSelect" onchange="changeView(this.value)" class="w-full bg-slate-50 border border-slate-300 text-xs text-slate-700 px-3 py-2 rounded-xl focus:outline-none focus:border-teal-500"></select>
+            </div>
+        </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div class="bg-white rounded-2xl p-5 border border-sky-200/80 shadow-sm relative overflow-hidden group hover:border-teal-400 transition-all">
@@ -169,6 +187,31 @@
                 </div>
                 <div id="statTopCategory" class="text-lg font-extrabold text-slate-800 truncate brand-font">N/A</div>
                 <div class="text-[11px] text-cyan-700 mt-1 font-medium">Most units sold</div>
+            </div>
+        </div>
+
+        <!-- Total dashboard only: sales split by location -->
+        <div id="locationBreakdownWrap" class="hidden bg-white rounded-2xl border border-sky-200/80 shadow-sm overflow-hidden">
+            <div class="p-4 border-b border-sky-100 flex items-center justify-between bg-sky-50/50">
+                <div class="flex items-center gap-2">
+                    <i data-lucide="map-pin" class="w-5 h-5 text-teal-600"></i>
+                    <h2 class="text-base font-bold text-slate-800">Sales by Location</h2>
+                </div>
+                <span class="text-xs text-slate-500">Click a row to open that stall</span>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm">
+                    <thead class="bg-sky-50 text-slate-600 text-xs uppercase tracking-wider font-semibold border-b border-sky-200">
+                        <tr>
+                            <th class="py-3.5 px-4">Location</th>
+                            <th class="py-3.5 px-4 text-right">Sales</th>
+                            <th class="py-3.5 px-4 text-right">Billed</th>
+                            <th class="py-3.5 px-4 text-right">Collected</th>
+                            <th class="py-3.5 px-4 text-right">Balance Due</th>
+                        </tr>
+                    </thead>
+                    <tbody id="locationBreakdownBody" class="divide-y divide-sky-100 text-slate-700 font-normal"></tbody>
+                </table>
             </div>
         </div>
 
@@ -265,6 +308,11 @@
                         <label class="block text-slate-600 text-[11px] font-semibold mb-1">Stall Sales Executive</label>
                         <input type="text" id="formExecutive" readonly class="w-full bg-white border border-slate-300 text-slate-600 px-3 py-1.5 rounded-lg">
                     </div>
+                </div>
+
+                <div>
+                    <label class="block text-slate-700 text-xs font-semibold mb-1">Sale Location *</label>
+                    <select id="formStall" required class="w-full bg-slate-50 border border-slate-300 text-slate-800 px-3 py-2 rounded-xl focus:outline-none focus:border-teal-500"></select>
                 </div>
 
                 <div class="space-y-3">
@@ -405,6 +453,42 @@
                 <button type="button" onclick="closeWhatsApp()" class="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-center">Cancel - don't send</button>
                 <a id="waChatLink" href="#" target="_blank" rel="noopener" onclick="return onWaChatClick(event)" class="px-4 py-2.5 rounded-xl bg-white border border-green-600 text-green-700 hover:bg-green-50 font-bold text-center">Save PDF &amp; open chat</a>
                 <button type="button" id="waShareBtn" onclick="shareWaPdf()" class="px-5 py-2.5 rounded-xl bg-green-600 hover:bg-green-500 text-white font-bold shadow-md shadow-green-600/20 text-center disabled:opacity-50">Share PDF on WhatsApp</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- STALL MANAGEMENT MODAL -->
+    <div id="stallModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 opacity-0 pointer-events-none transition-all duration-300">
+        <div class="bg-white border border-sky-200 rounded-2xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden transform scale-95 transition-all duration-300">
+            <div class="px-6 py-4 bg-sky-50 border-b border-sky-200 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="p-2 rounded-xl bg-sky-100 text-sky-700"><i data-lucide="map-pin" class="w-5 h-5"></i></div>
+                    <div>
+                        <h3 class="text-base font-bold text-slate-800">Stall Locations</h3>
+                        <p class="text-xs text-slate-500">Add stalls and events. Sales not tied to a stall are recorded as Direct Sale.</p>
+                    </div>
+                </div>
+                <button onclick="closeModal('stallModal')" class="text-slate-400 hover:text-slate-700 p-1 rounded-lg"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+
+            <div class="p-6 overflow-y-auto space-y-6 flex-1 text-xs sm:text-sm">
+                <form id="addStallForm" onsubmit="handleAddStall(event)" class="bg-sky-50/60 p-4 rounded-xl border border-sky-200 space-y-3">
+                    <h4 class="font-bold text-xs uppercase tracking-wider text-teal-700">Add New Stall</h4>
+                    <div>
+                        <label class="block text-slate-600 text-[11px] mb-1">Stall / Location Name *</label>
+                        <input type="text" id="newStallName" maxlength="60" placeholder="e.g. Talegaon Station Stall, Pune Maker Fair" required class="w-full bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-slate-800 focus:outline-none focus:border-teal-500">
+                    </div>
+                    <div class="flex justify-end pt-1">
+                        <button type="submit" class="bg-teal-600 hover:bg-teal-500 text-white font-bold px-4 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 shadow-sm">
+                            <i data-lucide="plus-circle" class="w-4 h-4"></i> Add Stall
+                        </button>
+                    </div>
+                </form>
+
+                <div>
+                    <h4 class="font-bold text-slate-700 text-xs uppercase tracking-wider mb-2">Your Stalls</h4>
+                    <div class="divide-y divide-sky-100 border border-sky-200 rounded-xl bg-white overflow-hidden" id="stallsListContainer"></div>
+                </div>
             </div>
         </div>
     </div>
@@ -641,6 +725,7 @@
         ============================================================ */
         const DEFAULT_LOGO_PATH = 'Logo Transparant.png';
         const ROLE_LABELS = { SuperAdmin: 'Super Admin', Admin: 'Admin', Staff: 'Staff' };
+        const ALL_MODALS = ['waModal', 'stallModal', 'brandModal', 'userManagementModal', 'catalogModal', 'invoiceModal', 'transactionModal'];
 
         const DEFAULT_BRAND = {
             name: 'TriAyam', accent: 'Ayam', badge: 'Stall POS', tagline: '3D Printing Studio & Services',
@@ -655,9 +740,13 @@
         let productCatalog = [];
         let transactions = [];
         let systemUsers = [];
+        let stalls = [];
         let currentUser = null;
         let token = '';
         try { token = localStorage.getItem('triayam_token') || ''; } catch (e) { /* storage blocked */ }
+        // What the dashboard is showing: 'TOTAL' (all locations, admins only), 'DIRECT' (direct sales) or a stall id
+        let currentView = 'TOTAL';
+        try { currentView = localStorage.getItem('triayam_view') || 'TOTAL'; } catch (e) { /* storage blocked */ }
         let serverRev = 0;
         let pendingLogoData = null;
         let toastTimer = null;
@@ -724,14 +813,18 @@
                 serverRev = d.rev;
                 brand = { ...DEFAULT_BRAND, ...d.brand };
                 productCatalog = d.catalog || [];
+                stalls = d.stalls || [];
                 transactions = (d.transactions || []).map(normalizeTxn);
                 systemUsers = d.users || [];
                 applyBranding();
                 applyUserPermissions();
+                refreshViewSelect();
                 updateStats();
+                renderBreakdown();
                 renderTable(false);
                 if (isOpen('userManagementModal')) renderUsersList();
                 if (isOpen('catalogModal')) renderCatalogList();
+                if (isOpen('stallModal')) renderStallsList();
                 return true;
             } finally { refreshing = false; }
         }
@@ -793,8 +886,164 @@
             document.getElementById('activeUserRole').innerText = ROLE_LABELS[currentUser.role] || currentUser.role;
             document.getElementById('brandSettingsBtn').classList.toggle('hidden', !isSuper());
             document.getElementById('adminUsersBtn').classList.toggle('hidden', !isAdminLevel());
+            document.getElementById('adminStallsBtn').classList.toggle('hidden', !isAdminLevel());
             document.getElementById('adminExcelBtn').classList.toggle('hidden', !isAdminLevel());
             document.getElementById('adminCatalogBtn').classList.remove('hidden');
+        }
+
+        /* ============================================================
+           STALL VIEWS (Total dashboard / Direct sales / one stall)
+        ============================================================ */
+        const stallName = id => { const s = stalls.find(x => x.id === id); return s ? s.name : 'Unknown stall'; };
+        const locationName = t => t.stallId ? stallName(t.stallId) : 'Direct Sale';
+
+        /** The sales that belong to the view that is open right now. */
+        function viewTxns() {
+            if (currentView === 'TOTAL') return transactions;
+            if (currentView === 'DIRECT') return transactions.filter(t => !t.stallId);
+            return transactions.filter(t => t.stallId === currentView);
+        }
+
+        function viewIsValid(v) {
+            if (v === 'TOTAL') return isAdminLevel();
+            if (v === 'DIRECT') return true;
+            return stalls.some(s => s.id === v);
+        }
+
+        function refreshViewSelect() {
+            if (!currentUser) return;
+            if (!viewIsValid(currentView)) currentView = 'DIRECT';
+            const opts = [];
+            if (isAdminLevel()) opts.push(['TOTAL', 'All Locations - Total Dashboard']);
+            opts.push(['DIRECT', 'Direct Sales']);
+            stalls.forEach(s => opts.push([s.id, s.name + (s.active ? '' : ' (inactive)')]));
+            const sel = document.getElementById('viewSelect');
+            sel.innerHTML = opts.map(([v, label]) => `<option value="${escapeHtml(v)}">${escapeHtml(label)}</option>`).join('');
+            sel.value = currentView;
+            updateViewHeading();
+        }
+
+        function updateViewHeading() {
+            let title, sub;
+            if (currentView === 'TOTAL') { title = 'Total Sales Dashboard'; sub = 'Direct sales and every stall combined'; }
+            else if (currentView === 'DIRECT') { title = 'Direct Sales'; sub = 'Sales not made at a stall'; }
+            else { title = stallName(currentView); sub = 'Sales recorded at this stall only'; }
+            document.getElementById('viewTitle').textContent = title;
+            document.getElementById('viewSub').textContent = sub;
+            document.getElementById('locationBreakdownWrap').classList.toggle('hidden', currentView !== 'TOTAL');
+        }
+
+        function changeView(v) {
+            if (!viewIsValid(v)) v = 'DIRECT';
+            currentView = v;
+            try { localStorage.setItem('triayam_view', v); } catch (e) { /* ignore */ }
+            document.getElementById('viewSelect').value = v;
+            updateViewHeading();
+            updateStats();
+            renderBreakdown();
+            renderTable();
+        }
+
+        function renderBreakdown() {
+            const body = document.getElementById('locationBreakdownBody');
+            if (!body) return;
+            const groups = [{ id: 'DIRECT', name: 'Direct Sales', inactive: false, count: 0, billed: 0, collected: 0 }];
+            stalls.forEach(s => groups.push({ id: s.id, name: s.name, inactive: !s.active, count: 0, billed: 0, collected: 0 }));
+            const byId = Object.fromEntries(groups.map(g => [g.id, g]));
+            transactions.forEach(t => {
+                const g = byId[t.stallId || 'DIRECT'] || byId.DIRECT;
+                g.count++; g.billed += t.total; g.collected += t.amountPaid;
+            });
+            const sum = groups.reduce((a, g) => ({ count: a.count + g.count, billed: a.billed + g.billed, collected: a.collected + g.collected }), { count: 0, billed: 0, collected: 0 });
+            const row = (g, link) => `
+                <tr class="${link ? 'hover:bg-sky-50/60 transition-colors cursor-pointer' : 'bg-sky-50'}" ${link ? `onclick="changeView('${g.id}')"` : ''}>
+                    <td class="py-3 px-4 ${link ? 'font-bold text-slate-800' : 'font-black text-slate-900'}">${escapeHtml(g.name)}${g.inactive ? ' <span class="text-[10px] text-slate-500">(inactive)</span>' : ''}</td>
+                    <td class="py-3 px-4 text-right">${g.count}</td>
+                    <td class="py-3 px-4 text-right font-bold">${money(g.billed)}</td>
+                    <td class="py-3 px-4 text-right font-bold text-teal-700">${money(g.collected)}</td>
+                    <td class="py-3 px-4 text-right font-bold text-rose-600">${money(Math.max(0, g.billed - g.collected))}</td>
+                </tr>`;
+            body.innerHTML = groups.map(g => row(g, true)).join('') +
+                row({ name: 'All Locations', count: sum.count, billed: sum.billed, collected: sum.collected, inactive: false }, false);
+        }
+
+        /* ---- stall management ---- */
+        function openStallModal() {
+            if (!isAdminLevel()) return showToast("Access denied.", "error");
+            renderStallsList();
+            showModal('stallModal');
+        }
+
+        function renderStallsList() {
+            const counts = {};
+            transactions.forEach(t => { if (t.stallId) counts[t.stallId] = (counts[t.stallId] || 0) + 1; });
+            const box = document.getElementById('stallsListContainer');
+            if (!stalls.length) {
+                box.innerHTML = '<div class="p-4 text-xs text-slate-500">No stalls yet. Add your first stall above. Until then every sale is a Direct Sale.</div>';
+                return;
+            }
+            box.innerHTML = stalls.map(s => `
+                <div class="p-3 flex items-center justify-between gap-2 text-xs ${s.active ? '' : 'opacity-60'}">
+                    <div>
+                        <div class="font-bold text-slate-800 flex items-center gap-2 flex-wrap">
+                            ${escapeHtml(s.name)}
+                            ${s.active ? '' : '<span class="px-2 py-0.5 rounded text-[10px] font-bold border bg-rose-50 text-rose-700 border-rose-200">Inactive</span>'}
+                        </div>
+                        <div class="text-slate-500 text-[11px]">${counts[s.id] || 0} sales</div>
+                    </div>
+                    <div class="flex items-center gap-1.5 shrink-0">
+                        <button onclick="renameStall('${s.id}')" class="px-2 py-1 bg-sky-50 hover:bg-sky-100 text-sky-700 rounded-lg border border-sky-200 font-semibold">Rename</button>
+                        <button onclick="toggleStallActive('${s.id}')" class="px-2 py-1 bg-amber-50 hover:bg-amber-100 text-amber-700 rounded-lg border border-amber-200 font-semibold">${s.active ? 'Deactivate' : 'Activate'}</button>
+                        <button onclick="deleteStall('${s.id}')" class="px-2 py-1 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg border border-rose-200 font-semibold">Delete</button>
+                    </div>
+                </div>`).join('');
+        }
+
+        async function handleAddStall(e) {
+            e.preventDefault();
+            const name = document.getElementById('newStallName').value.trim();
+            if (!name) return;
+            try {
+                const d = await api('POST', '/api/stalls', { name });
+                document.getElementById('addStallForm').reset();
+                showToast("Stall added!");
+                await refresh(true);
+                if (d && d.stall) changeView(d.stall.id);
+            } catch (err) { reportError(err); }
+        }
+
+        async function renameStall(id) {
+            const s = stalls.find(x => x.id === id);
+            if (!s) return;
+            const name = prompt('New name for this stall:', s.name);
+            if (name === null || !name.trim() || name.trim() === s.name) return;
+            try { await api('PUT', '/api/stalls/' + id, { name: name.trim() }); showToast("Stall renamed."); await refresh(true); }
+            catch (e) { reportError(e); }
+        }
+
+        async function toggleStallActive(id) {
+            const s = stalls.find(x => x.id === id);
+            if (!s) return;
+            try { await api('PUT', '/api/stalls/' + id, { active: !s.active }); await refresh(true); }
+            catch (e) { reportError(e); }
+        }
+
+        async function deleteStall(id) {
+            const s = stalls.find(x => x.id === id);
+            if (!s || !confirm(`Delete stall "${s.name}"? This only works if it has no sales; otherwise use Deactivate.`)) return;
+            try { await api('DELETE', '/api/stalls/' + id); showToast("Stall deleted."); await refresh(true); }
+            catch (e) { reportError(e); }
+        }
+
+        /** Fill the Sale Location dropdown in the sale form. */
+        function fillStallSelect(selected) {
+            const sel = document.getElementById('formStall');
+            const opts = [];
+            if (!selected) opts.push(['', '- Select location -']);
+            opts.push(['DIRECT', 'Direct Sale (no stall)']);
+            stalls.forEach(s => { if (s.active || s.id === selected) opts.push([s.id, s.name + (s.active ? '' : ' (inactive)')]); });
+            sel.innerHTML = opts.map(([v, label]) => `<option value="${escapeHtml(v)}">${escapeHtml(label)}</option>`).join('');
+            sel.value = selected || '';
         }
 
         /* ============================================================
@@ -832,7 +1081,7 @@
         document.addEventListener('keydown', e => {
             if (e.key !== 'Escape') return;
             hideToast();
-            ['waModal', 'brandModal', 'userManagementModal', 'catalogModal', 'invoiceModal', 'transactionModal'].forEach(closeModal);
+            ALL_MODALS.forEach(closeModal);
         });
 
         /* ============================================================
@@ -864,9 +1113,9 @@
             token = '';
             try { localStorage.removeItem('triayam_token'); } catch (e) { /* ignore */ }
             currentUser = null; serverRev = 0;
-            transactions = []; productCatalog = []; systemUsers = [];
-            ['waModal', 'brandModal', 'userManagementModal', 'catalogModal', 'invoiceModal', 'transactionModal'].forEach(closeModal);
-            updateStats(); renderTable();
+            transactions = []; productCatalog = []; systemUsers = []; stalls = [];
+            ALL_MODALS.forEach(closeModal);
+            updateStats(); renderBreakdown(); renderTable();
             showModal('loginOverlay');
         }
 
@@ -932,6 +1181,7 @@
             t.subtotal = Number(t.subtotal) || t.total;
             t.discount = Number(t.discount) || 0;
             t.amountPaid = Number(t.amountPaid) || 0;
+            t.stallId = t.stallId || null;
             if (t.gstRate === undefined) t.gstRate = 18;
             return t;
         }
@@ -946,9 +1196,10 @@
         }
 
         function updateStats() {
+            const list = viewTxns();
             let collected = 0, upi = 0, cash = 0, card = 0, due = 0;
             const productCounts = {};
-            transactions.forEach(t => {
+            list.forEach(t => {
                 const paid = Number(t.amountPaid) || 0;
                 collected += paid;
                 if (t.paymentMethod === 'UPI') upi += paid;
@@ -958,7 +1209,7 @@
                 t.items.forEach(i => { productCounts[i.name] = (productCounts[i.name] || 0) + i.qty; });
             });
             document.getElementById('statTotalRevenue').innerText = money(collected);
-            document.getElementById('statTotalSales').innerText = transactions.length;
+            document.getElementById('statTotalSales').innerText = list.length;
             document.getElementById('statUpiVsCash').innerText = `UPI: ₹${roundMoney(upi)} | Cash: ₹${roundMoney(cash)} | Card: ₹${roundMoney(card)}`;
             document.getElementById('statPending').innerText = `Balance due: ${money(due)}`;
             let top = "N/A", max = 0;
@@ -983,7 +1234,7 @@
             const methodF = document.getElementById('methodFilter').value;
             const dateF = document.getElementById('dateFilter').value;
 
-            const filtered = transactions.filter(t =>
+            const filtered = viewTxns().filter(t =>
                 (t.customerName.toLowerCase().includes(search) ||
                  String(t.customerPhone).includes(search) ||
                  t.invoiceNo.toLowerCase().includes(search)) &&
@@ -1011,6 +1262,7 @@
                     <td class="py-3 px-4 font-mono font-bold text-teal-700">
                         ${escapeHtml(t.invoiceNo)}
                         <div class="text-[11px] font-normal text-slate-500">${escapeHtml(t.dateTime.replace('T', ' '))}</div>
+                        <div class="text-[11px] font-normal text-slate-500">${escapeHtml(locationName(t))}</div>
                     </td>
                     <td class="py-3 px-4">
                         <div class="font-bold text-slate-800">${escapeHtml(t.customerName)}</div>
@@ -1063,6 +1315,9 @@
             document.getElementById('formDateTime').value =
                 new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
             document.getElementById('formExecutive').value = currentUser.name;
+            // Pre-select the location being viewed; on the Total dashboard the person must choose.
+            const activeStall = stalls.find(s => s.id === currentView && s.active);
+            fillStallSelect(currentView === 'DIRECT' ? 'DIRECT' : (activeStall ? activeStall.id : ''));
             document.getElementById('formCustName').value = '';
             document.getElementById('formCustPhone').value = '';
             document.getElementById('formDiscount').value = 0;
@@ -1164,6 +1419,8 @@
             if (items.length === 0) return showToast("Please add at least one product item.", "error");
             const phone = document.getElementById('formCustPhone').value.trim();
             if (!/^\d{10}$/.test(phone)) return showToast("Enter a valid 10-digit mobile number.", "error");
+            const location = document.getElementById('formStall').value;
+            if (!location) return showToast("Choose the sale location (a stall or Direct Sale).", "error");
             const status = document.getElementById('formPayStatus').value;
             const t = calculateFormTotals();
             if (status === 'Partial' && (t.paid <= 0 || t.paid >= t.total)) {
@@ -1174,6 +1431,7 @@
                 dateTime: document.getElementById('formDateTime').value,
                 customerName: document.getElementById('formCustName').value.trim(),
                 customerPhone: phone,
+                stallId: location === 'DIRECT' ? null : location,
                 items, discount: t.discount, amountPaid: t.paid,
                 paymentMethod: document.getElementById('formPayMethod').value,
                 paymentStatus: status,
@@ -1213,6 +1471,7 @@
             document.getElementById('formInvoiceNo').value = t.invoiceNo;
             document.getElementById('formDateTime').value = t.dateTime;
             document.getElementById('formExecutive').value = t.executive;
+            fillStallSelect(t.stallId || 'DIRECT');
             document.getElementById('formCustName').value = t.customerName;
             document.getElementById('formCustPhone').value = t.customerPhone;
             document.getElementById('formDiscount').value = t.discount;
@@ -1667,14 +1926,17 @@
             });
         }
 
+        /** Exports the sales of the view that is open (Total dashboard = every location). */
         async function exportToExcel() {
             if (!isAdminLevel()) return showToast("Only admins can export data.", "error");
             try { await loadXlsx(); } catch (e) { return showToast(e.message, "error"); }
-            if (transactions.length === 0) return showToast("No transaction records to export.", "error");
-            const rows = transactions.map(t => {
+            const list = viewTxns();
+            if (list.length === 0) return showToast("No transaction records to export.", "error");
+            const rows = list.map(t => {
                 const c = calcTotals(t.items, t.discount, t.gstRate);
                 return {
                     "Invoice ID": t.invoiceNo, "Date & Time": t.dateTime.replace('T', ' '),
+                    "Location": locationName(t),
                     "Customer Name": t.customerName, "Phone Number": t.customerPhone,
                     "Items": t.items.map(i => `${i.name} (x${i.qty})`).join(', '),
                     "Subtotal (INR)": t.subtotal, "Discount (INR)": t.discount, "Total (INR)": t.total,
@@ -1688,7 +1950,8 @@
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, "Stall Sales");
             const safeName = (brand.name || 'Stall').replace(/[^a-z0-9]+/gi, '_');
-            XLSX.writeFile(wb, `${safeName}_Stall_Report_${new Date().toISOString().slice(0, 10)}.xlsx`);
+            const scope = currentView === 'TOTAL' ? 'All' : (currentView === 'DIRECT' ? 'Direct' : stallName(currentView).replace(/[^a-z0-9]+/gi, '_'));
+            XLSX.writeFile(wb, `${safeName}_${scope}_Report_${new Date().toISOString().slice(0, 10)}.xlsx`);
             showToast("Excel sales report downloaded!");
         }
 
