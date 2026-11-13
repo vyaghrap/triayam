@@ -6,6 +6,7 @@ const MAX_BODY = 4 * 1024 * 1024;
 const ROLES = ['Staff', 'Admin', 'SuperAdmin'];
 const METHODS = ['UPI', 'Cash', 'Card'];
 const STATUSES = ['Paid', 'Partial', 'Pending'];
+const UUID_RE = /^[0-9a-f-]{36}$/;
 
 const DEFAULT_BRAND = {
   name: 'TriAyam', accent: 'Ayam', badge: 'Stall POS', tagline: '3D Printing Studio & Services',
@@ -93,7 +94,8 @@ async function sb(method, path, opts = {}) {
     const detail = `HTTP ${res.status}${code ? ' ' + code : ''}${data && data.message ? ': ' + String(data.message).slice(0, 160) : ''}`;
     let msg;
     if (code === '42501') msg = 'Database permission problem: run supabase/fix-grants.sql in the Supabase SQL Editor.';
-    else if (code === 'PGRST205' || code === '42P01') msg = 'Database tables are missing: run supabase/schema.sql in the Supabase SQL Editor.';
+    else if (code === 'PGRST205' || code === '42P01') msg = 'Database tables are missing: run supabase/schema.sql (or supabase/add-stalls.sql) in the Supabase SQL Editor.';
+    else if (code === '42703' || code === 'PGRST204') msg = 'Database is out of date: run supabase/add-stalls.sql in the Supabase SQL Editor.';
     else if (res.status === 401 || (res.status === 403 && !code)) msg = 'Database rejected the key: check SUPABASE_SERVICE_KEY in Netlify.';
     else if (res.status === 404 && !code) msg = 'Database address not found: check SUPABASE_URL in Netlify.';
     else if (res.status === 503 || res.status === 540 || res.status === 521) msg = 'Database is not responding: the Supabase project may be paused. Open the Supabase dashboard and click Restore.';
@@ -121,14 +123,16 @@ const txFromRow = r => ({
   customerName: r.customer_name, customerPhone: r.customer_phone, dateTime: r.date_time,
   items: r.items || [], subtotal: Number(r.subtotal), discount: Number(r.discount), total: Number(r.total),
   amountPaid: Number(r.amount_paid), gstRate: Number(r.gst_rate),
-  paymentMethod: r.payment_method, paymentStatus: r.payment_status, txnRef: r.txn_ref
+  paymentMethod: r.payment_method, paymentStatus: r.payment_status, txnRef: r.txn_ref,
+  stallId: r.stall_id || null, stallName: r.stall_name || ''
 });
 const txToRow = t => ({
   customer_name: t.customerName, customer_phone: t.customerPhone, date_time: t.dateTime, items: t.items,
   subtotal: t.subtotal, discount: t.discount, total: t.total, amount_paid: t.amountPaid, gst_rate: t.gstRate,
-  payment_method: t.paymentMethod, payment_status: t.paymentStatus, txn_ref: t.txnRef
+  payment_method: t.paymentMethod, payment_status: t.paymentStatus, txn_ref: t.txnRef, stall_id: t.stallId || null, stall_name: t.stallName || ''
 });
 const catFromRow = r => ({ id: r.id, name: r.name, category: r.category, price: Number(r.price) });
+const stallFromRow = r => ({ id: r.id, name: r.name, active: r.active !== false });
 const publicUser = u => ({ id: u.id, name: u.name, email: u.email, role: u.role, active: u.active !== false });
 const isAdminLevel = u => u.role === 'SuperAdmin' || u.role === 'Admin';
 const canManage = (actor, target) => isAdminLevel(actor) && !(target.role === 'SuperAdmin' && actor.role !== 'SuperAdmin');
@@ -154,6 +158,10 @@ function buildTxn(input, base, gstRateForNew) {
   if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(dateTime)) throw httpErr(400, 'Invalid date/time');
   const paymentMethod = METHODS.includes(input.paymentMethod) ? input.paymentMethod : 'UPI';
   const paymentStatus = STATUSES.includes(input.paymentStatus) ? input.paymentStatus : 'Paid';
+  const stallId = input.stallId ? String(input.stallId) : null; // null = Direct Sale
+  if (stallId && !UUID_RE.test(stallId)) throw httpErr(400, 'Invalid sale location');
+  // A sale whose stall was deleted keeps the stall's name; it can only be carried over, never invented.
+  const stallName = (!stallId && base && base.stallName && str(input.stallName, 60) === base.stallName) ? base.stallName : '';
 
   const subtotal = round2(items.reduce((a, i) => a + i.qty * i.price, 0));
   const discount = round2(Math.min(Math.max(Number(input.discount) || 0, 0), subtotal));
@@ -166,8 +174,16 @@ function buildTxn(input, base, gstRateForNew) {
   }
   return {
     customerName, customerPhone: phone, dateTime, items, subtotal, discount, total, amountPaid,
-    gstRate: base ? base.gstRate : gstRateForNew, paymentMethod, paymentStatus, txnRef: str(input.txnRef, 120)
+    gstRate: base ? base.gstRate : gstRateForNew, paymentMethod, paymentStatus, txnRef: str(input.txnRef, 120), stallId, stallName
   };
+}
+
+/** A sale may only point at a stall that exists and is active (or the stall it already belongs to). */
+async function checkStall(stallId, currentStallId) {
+  if (!stallId) return;
+  const rows = await sb('GET', `/stalls?id=eq.${stallId}&select=id,active`);
+  if (!rows.length) throw httpErr(400, 'That stall no longer exists. Pick another location.');
+  if (rows[0].active === false && stallId !== currentStallId) throw httpErr(400, 'That stall is inactive. Pick another location.');
 }
 
 /* ---------------- auth ---------------- */
@@ -292,14 +308,15 @@ async function route(req, context) {
     const meta = await prefetch;
     const rev = Number(meta[0] && meta[0].rev);
     if (since === rev) return json(200, { unchanged: true, rev, me: publicUser(me) });
-    const [brand, catalog, txns, users] = await Promise.all([
+    const [brand, catalog, stalls, txns, users] = await Promise.all([
       getBrand(),
       selectAll('/catalog?select=*&order=created_at.asc,id.asc'),
+      selectAll('/stalls?select=*&order=created_at.asc,id.asc'),
       selectAll('/transactions?select=*&order=date_time.desc,created_at.desc,id.asc'),
       isAdminLevel(me) ? selectAll('/app_users?select=id,name,email,role,active&order=created_at.asc,id.asc') : Promise.resolve([])
     ]);
     return json(200, {
-      rev, me: publicUser(me), brand, catalog: catalog.map(catFromRow),
+      rev, me: publicUser(me), brand, catalog: catalog.map(catFromRow), stalls: stalls.map(stallFromRow),
       transactions: txns.map(txFromRow), users: users.map(publicUser)
     });
   }
@@ -359,11 +376,57 @@ async function route(req, context) {
     }
   }
 
+  /* stalls / sale locations (Admin / Super Admin manage; everyone can see them via bootstrap) */
+  if (method === 'POST' && p === '/api/stalls') {
+    requireAdmin();
+    const b = await readBody(req);
+    const name = str(b.name, 60);
+    if (!name) throw httpErr(400, 'Stall name is required.');
+    try {
+      const rows = await sb('POST', '/stalls', { body: { name, active: true }, prefer: 'return=representation' });
+      return json(200, { stall: stallFromRow(rows[0]) });
+    } catch (e) {
+      if (e.pg === '23505') throw httpErr(409, 'A stall with this name already exists.');
+      throw e;
+    }
+  }
+  m = p.match(/^\/api\/stalls\/([0-9a-f-]{36})$/);
+  if (m) {
+    requireAdmin();
+    if (method === 'PUT') {
+      const b = await readBody(req);
+      const patch = {};
+      if (b.name !== undefined) {
+        patch.name = str(b.name, 60);
+        if (!patch.name) throw httpErr(400, 'Stall name is required.');
+      }
+      if (b.active !== undefined) patch.active = !!b.active;
+      if (!Object.keys(patch).length) throw httpErr(400, 'Nothing to update.');
+      try {
+        const rows = await sb('PATCH', `/stalls?id=eq.${m[1]}`, { body: patch, prefer: 'return=representation' });
+        if (!rows.length) throw httpErr(404, 'Stall not found');
+        return json(200, { stall: stallFromRow(rows[0]) });
+      } catch (e) {
+        if (e.pg === '23505') throw httpErr(409, 'A stall with this name already exists.');
+        throw e;
+      }
+    }
+    if (method === 'DELETE') {
+      const rows = await sb('GET', `/stalls?id=eq.${m[1]}&select=id,name`);
+      if (!rows.length) throw httpErr(404, 'Stall not found');
+      // Save the stall's name on its sales first, so they keep their location after the stall is gone.
+      await sb('PATCH', `/transactions?stall_id=eq.${m[1]}`, { body: { stall_name: rows[0].name }, prefer: 'return=minimal' });
+      await sb('DELETE', `/stalls?id=eq.${m[1]}`, { prefer: 'return=minimal' }); // sales are kept (stall_id becomes empty)
+      return json(200, { ok: true });
+    }
+  }
+
   /* transactions */
   if (method === 'POST' && p === '/api/transactions') {
     const b = await readBody(req);
     const brand = await prefetch;
     const data = buildTxn(b, null, brand.gstRate);
+    await checkStall(data.stallId, null);
     for (let attempt = 0; attempt < 4; attempt++) {
       const seq = await sb('POST', '/rpc/next_counter', { body: {} });
       const invoiceNo = `${brand.prefix || 'INV'}-${new Date().getFullYear()}-${seq}`;
@@ -390,6 +453,7 @@ async function route(req, context) {
         throw httpErr(409, 'This record was changed on another device. The latest data has been loaded - please re-apply your edit.');
       }
       const data = buildTxn(b, cur);
+      await checkStall(data.stallId, cur.stallId);
       const rows = await sb('PATCH', `/transactions?id=eq.${cur.id}&version=eq.${cur.version}`, {
         body: { ...txToRow(data), version: cur.version + 1 }, prefer: 'return=representation'
       });
@@ -402,11 +466,10 @@ async function route(req, context) {
     }
   }
 
-  /* one-time import from the old browser-only version */
+  /* one-time import from the old browser-only version (imported sales become Direct Sales) */
   if (method === 'POST' && p === '/api/import') {
     requireSuper();
     const b = await readBody(req);
-    const brand = await getBrand();
     const existing = new Set((await selectAll('/transactions?select=invoice_no&order=invoice_no.asc')).map(r => r.invoice_no));
     const rows = [];
     let maxSeq = 0;
@@ -417,7 +480,7 @@ async function route(req, context) {
         const paid = Number(old.amountPaid);
         const gst = Number(old.gstRate);
         const data = buildTxn({
-          ...old, amountPaid: Number.isFinite(paid) ? paid : (old.paymentStatus === 'Paid' ? old.total : 0)
+          ...old, stallId: null, amountPaid: Number.isFinite(paid) ? paid : (old.paymentStatus === 'Paid' ? old.total : 0)
         }, null, Number.isFinite(gst) ? gst : 18);
         rows.push({ ...txToRow(data), invoice_no: invoiceNo, executive: str(old.executive, 80) || 'Imported', version: 1 });
         existing.add(invoiceNo);
@@ -443,7 +506,6 @@ async function route(req, context) {
       names.add(name);
     }
     if (cats.length) await sb('POST', '/catalog', { body: cats, prefer: 'return=minimal' });
-    void brand;
     return json(200, { addedTransactions: addedTx, addedCatalog: cats.length });
   }
 
