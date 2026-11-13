@@ -72,11 +72,15 @@ create table if not exists transactions (
   payment_method text not null default 'UPI',
   payment_status text not null default 'Paid',
   txn_ref        text not null default '',
-  stall_id       uuid references stalls (id) on delete restrict,   -- null = Direct Sale
+  stall_id       uuid references stalls (id) on delete set null,   -- null = Direct Sale (or the stall was deleted)
+  stall_name     text not null default '',                          -- name kept when a stall is deleted
   created_at     timestamptz not null default now()
 );
 -- for databases created before stalls existed
-alter table transactions add column if not exists stall_id uuid references stalls (id) on delete restrict;
+alter table transactions add column if not exists stall_id uuid references stalls (id) on delete set null;
+alter table transactions add column if not exists stall_name text not null default '';
+alter table transactions drop constraint if exists transactions_stall_id_fkey;
+alter table transactions add constraint transactions_stall_id_fkey foreign key (stall_id) references stalls (id) on delete set null;
 create index if not exists transactions_date_idx on transactions (date_time desc);
 create index if not exists transactions_stall_idx on transactions (stall_id);
 

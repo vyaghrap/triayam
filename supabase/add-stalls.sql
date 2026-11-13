@@ -9,7 +9,12 @@ create table if not exists stalls (
   created_at timestamptz not null default now()
 );
 
-alter table transactions add column if not exists stall_id uuid references stalls (id) on delete restrict;
+alter table transactions add column if not exists stall_id uuid references stalls (id) on delete set null;
+-- name saved on a sale when its stall is deleted, so the sale keeps its location
+alter table transactions add column if not exists stall_name text not null default '';
+-- deleting a stall keeps its sales (older runs of this file created the link as "restrict")
+alter table transactions drop constraint if exists transactions_stall_id_fkey;
+alter table transactions add constraint transactions_stall_id_fkey foreign key (stall_id) references stalls (id) on delete set null;
 create index if not exists transactions_stall_idx on transactions (stall_id);
 
 drop trigger if exists t_rev on stalls;
