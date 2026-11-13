@@ -374,6 +374,12 @@
                             <span>Discount (₹):</span>
                             <input type="number" id="formDiscount" value="0" min="0" step="0.01" oninput="calculateFormTotals()" class="w-24 bg-white border border-amber-300 text-right px-2 py-1 rounded text-slate-800 text-xs">
                         </div>
+                        <div id="formGstWrap">
+                            <label class="flex items-center gap-2 text-xs text-slate-700 cursor-pointer">
+                                <input type="checkbox" id="formGstEnabled" onchange="calculateFormTotals()" class="w-4 h-4">
+                                Charge GST on this sale
+                            </label>
+                        </div>
                         <div class="flex justify-between text-slate-600 text-xs"><span id="calcGstLabel">GST (18% included):</span><span id="calcGst" class="text-slate-500">₹0.00</span></div>
                         <div class="border-t border-amber-200 pt-2 flex justify-between items-center text-base font-black text-slate-900 brand-font">
                             <span>Grand Total:</span><span id="calcGrandTotal" class="text-amber-700">₹0.00</span>
@@ -685,6 +691,12 @@
                             <label class="block text-slate-700 text-xs font-semibold mb-1">Website</label>
                             <input type="text" id="bsWebsite" maxlength="80" class="w-full bg-slate-50 border border-slate-300 px-3 py-2 rounded-xl focus:outline-none focus:border-violet-500">
                         </div>
+                        <div class="sm:col-span-2">
+                            <label class="flex items-center gap-2 text-xs font-semibold text-slate-700 cursor-pointer">
+                                <input type="checkbox" id="bsGstEnabled" onchange="toggleGstFields()" class="w-4 h-4">
+                                Registered for GST (charge GST on invoices). Untick for small businesses / MSMEs without GST.
+                            </label>
+                        </div>
                         <div>
                             <label class="block text-slate-700 text-xs font-semibold mb-1">GSTIN</label>
                             <input type="text" id="bsGstin" maxlength="20" class="w-full bg-slate-50 border border-slate-300 px-3 py-2 rounded-xl uppercase focus:outline-none focus:border-violet-500">
@@ -731,7 +743,7 @@
             name: 'TriAyam', accent: 'Ayam', badge: 'Stall POS', tagline: '3D Printing Studio & Services',
             invoiceName: 'TriAyam Studio', invoiceTagline: '3D Printing Studio & Prototyping Services',
             address: 'Talegaon Station, Pune, Maharashtra', phone: '', email: '', website: 'triayam.in',
-            gstin: '', gstRate: 18, prefix: 'TA',
+            gstin: '', gstRate: 18, gstEnabled: true, prefix: 'TA',
             footer: 'Thank you for visiting the TriAyam Stall!',
             footerSub: 'Visit triayam.in for custom 3D design & batch manufacturing', logo: ''
         };
@@ -1348,7 +1360,7 @@
             document.getElementById('formPayStatus').value = 'Paid';
             document.getElementById('formAmountPaid').value = 0;
             document.getElementById('formTxnRef').value = '';
-            document.getElementById('formGstRate').value = brand.gstRate;
+            setGstControls(brand.gstEnabled !== false ? brand.gstRate : 0, brand.gstEnabled !== false && brand.gstRate > 0, brand.gstEnabled !== false);
             document.getElementById('formItemsContainer').innerHTML = "";
             addFormItemRow();
             showModal('transactionModal');
@@ -1367,16 +1379,23 @@
             return items;
         }
 
+        /** rate = GST % used when the box is ticked; checked = starts ticked; show = whether the box is offered at all. */
+        function setGstControls(rate, checked, show) {
+            document.getElementById('formGstRate').value = rate;
+            document.getElementById('formGstEnabled').checked = !!checked;
+            document.getElementById('formGstWrap').classList.toggle('hidden', !show);
+        }
+
         function calculateFormTotals() {
             const status = document.getElementById('formPayStatus').value;
             document.getElementById('formAmountPaidWrap').classList.toggle('hidden', status !== 'Partial');
-            const rate = parseFloat(document.getElementById('formGstRate').value) || 0;
+            const rate = document.getElementById('formGstEnabled').checked ? (parseFloat(document.getElementById('formGstRate').value) || 0) : 0;
             const c = calcTotals(readFormItems(), document.getElementById('formDiscount').value, rate);
             let paid = 0;
             if (status === 'Paid') paid = c.total;
             else if (status === 'Partial') paid = Math.min(Math.max(parseFloat(document.getElementById('formAmountPaid').value) || 0, 0), c.total);
             document.getElementById('calcSubtotal').innerText = money(c.subtotal);
-            document.getElementById('calcGstLabel').innerText = `GST (${rate}% included):`;
+            document.getElementById('calcGstLabel').innerText = rate > 0 ? `GST (${rate}% included):` : 'GST (not charged):';
             document.getElementById('calcGst').innerText = money(c.gst);
             document.getElementById('calcGrandTotal').innerText = money(c.total);
             document.getElementById('calcPaid').innerText = money(paid);
@@ -1455,6 +1474,7 @@
                 customerPhone: phone,
                 stallId: (location === 'DIRECT' || location.startsWith('R:')) ? null : location,
                 stallName: location.startsWith('R:') ? location.slice(2) : '',
+                gstEnabled: document.getElementById('formGstEnabled').checked,
                 items, discount: t.discount, amountPaid: t.paid,
                 paymentMethod: document.getElementById('formPayMethod').value,
                 paymentStatus: status,
@@ -1502,7 +1522,7 @@
             document.getElementById('formPayStatus').value = t.paymentStatus;
             document.getElementById('formAmountPaid').value = t.amountPaid;
             document.getElementById('formTxnRef').value = t.txnRef || '';
-            document.getElementById('formGstRate').value = t.gstRate;
+            setGstControls(t.gstRate > 0 ? t.gstRate : (brand.gstEnabled !== false ? brand.gstRate : 0), t.gstRate > 0, brand.gstEnabled !== false || t.gstRate > 0);
             document.getElementById('formItemsContainer').innerHTML = "";
             t.items.forEach(i => addFormItemRow(i));
             showModal('transactionModal');
@@ -1538,7 +1558,7 @@
                             <h2 class="text-xl font-black brand-font tracking-tight" style="color:#000000 !important;">${escapeHtml(brand.invoiceName || brand.name)}</h2>
                             ${brand.invoiceTagline ? `<p class="text-xs font-semibold text-slate-700">${escapeHtml(brand.invoiceTagline)}</p>` : ''}
                             <p class="text-[11px] text-slate-600">${contact}</p>
-                            ${brand.gstin ? `<p class="text-[11px] text-slate-600 font-semibold">GSTIN: ${escapeHtml(brand.gstin)}</p>` : ''}
+                            ${brand.gstin && (brand.gstEnabled !== false || t.gstRate > 0) ? `<p class="text-[11px] text-slate-600 font-semibold">GSTIN: ${escapeHtml(brand.gstin)}</p>` : ''}
                         </div>
                     </div>
                     <div class="text-right shrink-0">
@@ -1716,7 +1736,7 @@
             const contact = [brand.address, brand.phone && ('Ph: ' + brand.phone), brand.email, brand.website].filter(Boolean).join(' | ');
             ctx.font = font(400, 11);
             for (const l of wrap(contact, 410)) { text(l, hx, ly, { f: font(400, 11), color: '#475569' }); ly += 15; }
-            if (brand.gstin) { text('GSTIN: ' + brand.gstin, hx, ly, { f: font(600, 11), color: '#475569' }); ly += 15; }
+            if (brand.gstin && (brand.gstEnabled !== false || t.gstRate > 0)) { text('GSTIN: ' + brand.gstin, hx, ly, { f: font(600, 11), color: '#475569' }); ly += 15; }
             text(t.invoiceNo, W - M, y, { f: font(700, 17, true), align: 'right' });
             text(t.dateTime.replace('T', ' '), W - M, y + 25, { f: font(400, 12), color: '#475569', align: 'right' });
             text('STATUS: ' + String(t.paymentStatus).toUpperCase(), W - M, y + 45, { f: font(700, 11), align: 'right' });
@@ -2158,10 +2178,21 @@
         function openBrandModal() {
             if (!isSuper()) return showToast("Only a Super Admin can edit brand settings.", "error");
             for (const [key, id] of Object.entries(BRAND_FIELDS)) document.getElementById(id).value = brand[key] ?? '';
+            document.getElementById('bsGstEnabled').checked = brand.gstEnabled !== false;
+            toggleGstFields();
             pendingLogoData = brand.logo || '';
             document.getElementById('bsLogoFile').value = '';
             previewLogo();
             showModal('brandModal');
+        }
+
+        function toggleGstFields() {
+            const on = document.getElementById('bsGstEnabled').checked;
+            ['bsGstin', 'bsGstRate'].forEach(id => {
+                const el = document.getElementById(id);
+                el.disabled = !on;
+                el.style.opacity = on ? '' : '0.5';
+            });
         }
 
         function handleLogoFile(input) {
@@ -2201,6 +2232,7 @@
             const next = {};
             for (const [key, id] of Object.entries(BRAND_FIELDS)) next[key] = document.getElementById(id).value.trim();
             next.logo = pendingLogoData || '';
+            next.gstEnabled = document.getElementById('bsGstEnabled').checked;
             if (!next.name) return showToast("Brand name is required.", "error");
             try {
                 await api('PUT', '/api/brand', next);
